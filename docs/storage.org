@@ -1,0 +1,133 @@
+#+title: Chidu 存储模型
+#+language: zh-CN
+
+* 数据
+
+| 数据 | 权威来源 | 丢失后的处理 |
+|------+----------+--------------|
+| remote cache | JMAP observation | 可以重建，但正常运行不能依赖全量重拉 |
+| control state | Chidu reducer | 必须从 durable checkpoint 恢复 |
+| local intent | 用户和本地 runtime | 不能丢失或猜测结果 |
+| exact bytes | 收到或生成的 byte stream | 按 retention 回收 |
+| projection | canonical cache 和 intent | 可以删除并重建 |
+
+* Namespace 与 checkpoint
+
+Account cache 由 =(endpoint_id, principal_epoch, remote_account_id)= 唯一确定。
+Password 或 token rotation 可以保留 epoch；
+credential subject 或显式 rebind 推进 epoch，并建立新的 remote object 和 type-state namespace。
+
+Mailbox、Email、Identity 和 EmailSubmission 各自保存 opaque JMAP type state。
+Session state、queryState 和 type state 使用独立 namespace。
+
+每个 durable checkpoint 还有本地 revision。
+Network result 只有在 Account、generation owner、remote state 和 expected revision 仍匹配时才能提交。
+
+* Email persistence
+
+Store 按 [[file:domain.org][领域模型]] 分开保存三类 canonical data：
+
+- stable =EmailRecord= 和 write-once property fragments；
+- building 或 active generation 的 membership、mailboxIds、keywords 和 extension state；
+- required property profile 的 coverage。
+
+Write-once fragment 可以从 unknown 补全为 value，不同的已知 value 产生 anomaly 或使 cache 失效。
+Generation activation 原子切换 active pointer，live changes 原地更新 active generation。
+
+* Local intent
+
+Mutation 在访问网络前持久化 operation、完整 target set 和 Accepted evidence。
+Per-target result 至少区分 pending、succeeded、rejected、conflict 和 unknown outcome。
+
+Ordinary Mailbox move、move to Trash 和 =$seen= 各自保存完成恢复所需的 evidence。
+它们共享 wire adapter 和窄 batching helper，各自保留独立 reducer。
+
+Success 或 rejection 收起 overlay；
+unknown result 保留到 reconciliation 完成。
+Undo 根据最新 canonical state 创建新 operation。
+
+ComposeWorkspace、DraftPublishAttempt 和 SubmissionAttempt 都是 durable local control state，详细
+语义见 [[file:compose.org][Compose、Draft 与 Submission]]。当前 =chidu_compose_workspace= 保存
+structured ComposeDocument、Account/Identity binding、base remote Email/Blob、published revision 和
+local revision；它是恢复 journal，不冒充 JMAP Draft Email。
+Appkit generation 不等同于 durable revision 编号，Store 通过 expected durable revision 做 CAS。
+
+* Blob 与 projection
+
+Remote blobId 作为 JMAP locator，本地 Blob id 由 exact bytes 的 digest 形成。
+Partial file 先写入 private staging，完成 size 或 digest 验证后再原子发布；
+metadata SQLite row 只保存 locator 和 materialization metadata。
+
+Summary 是 active generation 上的 bounded derived view，不持久化第二份 Summary rows、queryState 或 cursor。
+Search、Conversation 和 FTS 是可重建 materialization；返回 row 前必须验证 Account
+accessibility、=principal_epoch= 和 active membership。Notification 由 canonical live transition 的
+bounded new-member ids 在最终 active state 上派生，不保存第二只 Email checkpoint。
+
+Server query cache 只服务 Search 等真正由远端 query identity 定义的结果，保存 exact filter、sort、
+queryState、cursor 和有界 ordered prefix。Mailbox mutation 把这些 query lease 标为 stale，并暂停
+append 直到 refresh 建立新 lease。
+
+* Store API
+
+Store 通过 closed domain operation 接收完整 input 并返回 bounded typed result。
+Operation 覆盖 sync checkpoint、projection、mutation、body materialization 和 Conversation。
+
+一个 Store call 拥有一个完整 transaction；
+网络等待、MIME 解析、Blob hashing 和 UI 更新都在 transaction 外。
+
+JMAP adapter 已经完成 scalar、shape、coverage 和 resource-limit validation。
+Store 检查 identity、ownership、state、revision 和 relation；
+SQLite constraint 负责最终 persisted shape。
+
+* SQLite backend
+
+=chidu-store-sqlite.el= 负责 backend composition 和唯一 exhaustive dispatch，内部文件按职责拆分：
+
+| 文件 | 职责 |
+|------+------|
+| =chidu-store-sqlite-core.el= | lifecycle、codec、change sequence 和 stable Email identity |
+| =chidu-store-sqlite-directory.el= | Endpoint、Account、Identity 和 Mailbox |
+| =chidu-store-sqlite-compose.el= | structured Compose workspace、revision CAS 和 recipient evidence |
+| =chidu-store-sqlite-draft.el= | DraftPublishAttempt、response-loss settlement 和 predecessor cleanup |
+| =chidu-store-sqlite-schema.el= | current-format manifest 和 assertion |
+| =chidu-store-sqlite-sync.el= | bootstrap generation、checkpoint 和 Search materialization |
+| =chidu-store-sqlite-generation.el= | active generation 的 canonical Summary read 与 mutation helper |
+| =chidu-store-sqlite-hydration.el= | metadata hydration transition |
+| =chidu-store-sqlite-mutation-support.el= | target、lane 和 shared mutation helper |
+| =chidu-store-sqlite-mutation.el= | read state 和 ordinary Mailbox move |
+| =chidu-store-sqlite-trash.el= | move-to-Trash evidence 和 transition |
+| =chidu-store-sqlite-materialization.el= | body、attachment、parsed Blob 和 Conversation |
+
+SQLite 提供原子 commit、unique/foreign-key/check constraint、keyset pagination、WAL 和 FTS tooling。
+Store workflow 必须把大页拆成有界 transaction，并在 transaction 之间让出 Emacs event loop。
+
+* Current-format policy
+
+当前开发使用尚未发布的 on-disk format。
+=chidu-store-sqlite-schema.el= 只有一份 executable current-schema AST，同时生成 fresh DDL 和 reopen assertion。
+
+新数据库运行完整 initializer；
+已有数据库在任何 Store operation 前核对 table、column、default、CHECK、foreign key 和 index。
+任一 drift 都返回 =rebuild-required=。
+
+稳定格式发布前，维护者只对自己的本地数据执行一次性转换，或重建 disposable Store。
+正式 migration contract 必须在第一次承诺 release-to-release 升级时单独设计。
+
+* SQL notation
+
+=chidu-sql.el= 是 backend 内部的 compile-first S-expression notation。
+Runtime DML 在 literal AST 中以 =[:bind ELISP-FORM]= 声明 lexical hole；
+macro expansion 生成固定 SQL 和普通 =?= placeholder。
+
+每个 hole 按最终 placeholder 顺序恰好求值一次。
+Lexical hole 是 runtime binding 的唯一参数表示。
+
+=:row= 让 INSERT column 和 value 保持相邻，并用显式 =:update= 或 =[:update EXPR]= 声明 conflict behavior。
+Structured SELECT 配合 =chidu-sql-map= 和 =chidu-sql-one=；
+raw SQL 只用于 connection lifecycle 和 schema introspection。
+
+* Owner
+
+SQLite owner connection 以 lifetime =BEGIN EXCLUSIVE= transaction 阻止第二只 Chidu runtime 同时拥有同一 Store。
+Stock Emacs =sqlite-open= 缺少 =SQLITE_OPEN_NOFOLLOW=，因此 backend capability 报告 =strict-native-open-p=nil=。
+

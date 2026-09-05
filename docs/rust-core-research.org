@@ -1,0 +1,89 @@
+#+title: Chidu Rust Core 可行性研究
+#+language: zh-CN
+#+date: 2026-08-24
+
+* 研究问题
+
+本研究评估完整 Rust Core 是否值得拥有 Chidu 的 domain runtime、JMAP workflow、Store 和本地 RPC。
+它检查了 Tokio、Kameo、rusqlite、reqwest、JMAP crates、rustix、secrecy 和 zeroize 可以承担的机械边界。
+
+研究时仓库包含一只 Rust Core prototype，但它没有完成目标 async runtime。
+该 prototype 后来从当前树删除，本文不再描述其文件、依赖或“已实现”状态。
+
+* 当前决策
+
+2026-08-25 起，Chidu v1 不维护 Rust Core、内部 RPC、跨实现 schema compatibility 或 runtime fallback。
+当前实现是 in-process Emacs Lisp application，Rust 只可能以有测量依据的窄 helper 或 native boundary 重新出现。
+
+跨语言 domain runtime 增加 DTO、schema mapping、debugging、deployment 和双端维护成本；
+当前 workload 与 threat model 选择 in-process implementation。
+
+* Rust 能提供的边界
+
+** Async runtime
+
+Tokio 可以提供 nonblocking I/O、bounded channel、timer、semaphore、task cancellation 和 blocking worker pool。
+Kameo 或自定义 owner loop 可以提供 mailbox、link 和 ask/reply；
+Chidu 仍需定义 operation、late-result 和 recovery 语义。
+
+Actor framework 不能自动决定 Account ownership、mutation ordering、stateMismatch、response loss 或 Store checkpoint。
+这些属于 domain contract，而不是 runtime library behavior。
+
+** Store
+
+Rusqlite 和 rustix 可以在一个 process 中拥有 SQLite connection、no-follow open、file descriptor 和 lifetime lock。
+Store worker可以避免同步 =sqlite3_step= 阻塞 async owner，但不应改变 closed Store API 或暴露 arbitrary SQL。
+
+如果 future threat model 只缺 strict open 或 owner syscall，一只窄 Store helper 比完整 Rust Core 更合适。
+如果 future benchmark 只缺 SQLite concurrency，同一 helper 可以升级为 serialized writer 和 fixed bounded reader pool。
+
+** RPC
+
+Rust 适合实现 dedicated framed reader、bounded admission、single writer、byte queue 和 slow-client disconnect。
+这些约束仍必须显式实现和 fuzz，语言本身不会自动提供 header cap、JSON depth limit 或 mutation retry semantics。
+
+** HTTP、EventSource 与 Blob
+
+Reqwest 和 Tokio 可以承担 shared HTTP pool、streaming body、timeout、cancellation、Blob sink 和 SSE byte stream。
+Chidu 仍需定义 redirect authority、response limit 和 SSE parser；
+Blob verification、atomic publish 和 late-result fence 属于 domain adapter。
+
+现有 plz/curl path 已满足当前 bounded transport需求。
+只有可复现 workload 或部署约束证明它不足时，才值得替换 transport implementation。
+
+** Credential
+
+Rust 可以减少 secret 的 Debug、log 和 drop 泄漏，并让 credential、HTTP 和 filesystem boundary 集中在一个 helper 中。
+如果交互式 Emacs 先从 =auth-source= 取得 secret 再传给 Rust，secret 仍然进入 Lisp heap。
+
+“Secret 不进入任何 Lisp heap”要求 helper直接访问 credential provider，只向 Emacs 暴露 opaque reference。
+
+* 完整 Rust Core 的优势
+
+- 更自然的多 Endpoint async I/O 和 bounded scheduling；
+- Core event loop 不受 Elisp execution model 影响；
+- SQLite、HTTP、stream 和 secret handle 可以集中拥有；
+- 独立 binary 的 idle RSS 可能低于 child Emacs；
+- Compile-time type 有助于 closed DTO 实现。
+
+* 完整 Rust Core 的成本
+
+- Domain、JMAP adapter、RPC DTO 和 Emacs projection 形成跨语言 mapping；
+- Compose 和 Emacs UI 仍在 Elisp，两侧都要维护 lifecycle；
+- Cancellation、supervision 和 teardown 仍需项目代码；
+- Pre-1 JMAP 或 actor crate 带来 API churn；
+- Rust 不能自动解决 JMAP cache correctness、slow-client policy 或 UI-side credential race。
+
+* 重新评估条件
+
+完整 Rust Core 只有在多项要求同时成立时才明显胜出：
+
+- 大量 Endpoint 和 Account effect 必须真正并行；
+- Store、JSON 或 MIME work 不能暂停 Core event loop；
+- Adversarial local client需要 hard backpressure 和 disconnect；
+- Secret 不得进入任何 Core Lisp heap；
+- Same-UID path adversary进入 threat model；
+- 项目愿意长期维护 Rust 和 Elisp 之间的完整 domain boundary。
+
+若只有其中一项成立，优先实现更窄的 Store、credential、transport 或 file helper。
+任何重启 Rust 路线的决定都必须先有 workload、threat model 和 falsifiable benchmark。

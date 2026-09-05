@@ -1,0 +1,5 @@
+*.elc
+/.eask/
+*.pyc
+
+*tmp/

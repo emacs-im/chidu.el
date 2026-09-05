@@ -1,0 +1,123 @@
+#+title: Chidu 领域模型
+#+language: zh-CN
+
+* Endpoint、Account 与 Workspace
+
+** Endpoint
+
+=JmapEndpoint= 表示一份连接配置和 credential authority。
+它拥有本地 =endpoint_id=、Session URL、login、authentication kind、approved HTTPS authority 和 =principal_epoch=。
+
+用户配置只定义 Endpoint 和 credential authority；
+Session 返回的 URL、capability 和 Account 都作为 observation 保存。
+Password 或 token rotation 可以保留 =principal_epoch=，login、credential subject 或显式 rebind 则建立新 epoch。
+
+** Account
+
+=Account= 以本地 =account_id= 标识，并由 =(endpoint_id, principal_epoch, remote_account_id)= 唯一确定。
+Account 是 Mailbox、Email、Identity、JMAP type state 和本地 Operation 的 scope。
+Shared Account 的对象可见性和部分属性取决于 viewer，因此 cache 始终绑定 =principal_epoch=。
+Account accessibility 只由明确 observation 改变，Session omission 单独记录为 exposure state。
+
+** Workspace
+
+=Workspace= 保存 Account scope、默认 view、Identity 规则和通知策略。
+删除 Workspace 只移除这些产品配置，Account cache 和 durable operation 继续由 Account 拥有。
+
+* Email
+
+** Identity
+
+=EmailRecord= 由 =local_email_id=、=account_id= 和 =remote_email_id= 组成。
+=(account_id, remote_email_id)= 唯一，并且是 Email identity 的唯一远端来源。
+JMAP thread merge 销毁旧 remote Email 并创建新 remote Email 时，新 remote id 得到新的 =EmailRecord=。
+Default retention 保留最小 identity mapping；
+strict retention 删除 mapping 后，重新可见的 remote Email 得到新的 local id。
+
+** 属性分类
+
+| 分类 | 示例 | 更新规则 |
+|------+------|----------|
+| write-once fragment | threadId、blobId、地址、header、bodyStructure | unknown 可以补全，已知值不能被不同 observation 静默覆盖 |
+| generation-scoped mutable state | mailboxIds、keywords、capability-owned mutable property | 在 active generation 内按完整 observation 替换 |
+| presentation hint | preview、SearchSnippet | 可以过期或重建，不参与 immutable conflict 判断 |
+| materialization | body value、raw bytes、attachment bytes | 按 profile 和 retention 独立保存 |
+
+partial =Email/get= 使 property coverage 必须显式记录。
+=EmailPropertyProfile= 声明 required immutable families 和 tracked mutable properties；
+profile version 与 capability fingerprint 标识 coverage contract。
+
+首个可读 generation 要求 =metadata-v1= 完整，正文、body structure、raw bytes 和附件 bytes 保持按需 materialize。
+新增 immutable family 可以 lazy backfill，新增 mutable family 必须先完成 backfill 和 changes closure。
+
+** Generation
+
+=EmailGeneration= 拥有一个 Account 当前可见 Email 的 membership 和 mutable state。
+=EmailRecord= 和 write-once fragments 在所有 generation 间只保存一份。
+
+Generation lifecycle 只有 =building=、=active= 和 =retired=。
+一个 Account 只有一个 active generation，并且至多有一个由 durable checkpoint 拥有的 building generation；
+普通查询只读取 active generation。
+
+Activation 验证 generation owner、checkpoint revision、required profile 和 Mailbox relation；
+随后退休旧 active generation、发布新 generation并推进 Email state。
+Active generation 原地接受 live changes。
+
+** Visibility loss
+
+=/changes.destroyed= 和 =Email/get.notFound= 都是当前 viewer 的 visibility-loss evidence，物理删除状态保持 unknown。
+普通投影立即停止发布对应 Email；
+Operation、Draft 或 SubmissionAttempt 可以保留 reconciliation 所需的最小 evidence。
+
+Body 和 raw materialization 的保留由 retention policy 决定。
+同一 Account 中的 remote id 再次可见时，已有 mapping 复用 local id，并重新验证 write-once fragment。
+
+* Mailbox 与 Identity
+
+=Mailbox= 由 =(account_id, remote_mailbox_id)= 唯一确定；
+其 observation 保存 name、role、parent、sort order、subscription、rights 和 server counts。
+Email 可以先引用尚未完成 Mailbox sync 的 remote id，Store 以 identity placeholder 保留关系。
+Server count 和本地 active projection count 分别保存。
+
+发送 =Identity= 属于一个 Account，并使用独立 JMAP Identity state。
+Identity 的解析、Draft 和 SubmissionAttempt 只在 [[file:identity.org][身份与发送模型]] 中定义。
+
+* Blob 与 exact bytes
+
+JMAP blobId 是 Account-scoped remote locator，本地 Blob id 是 exact bytes 的 content address。
+相同 exact bytes 可以在 Blob layer 共享；
+Email identity、Mailbox membership 和 keyword state 仍按 Account-scoped Email 保存。
+
+Exact RFC bytes 在用户请求 raw 或 MIME part、要求离线保留、冻结 Compose 内容或准备可重试 upload 时 materialize。
+
+=Email/parse= 产生 Blob-scoped =ParsedBlobView=。
+它只携带 parsed Blob 内容，并保持在 =EmailRecord= 之外。
+
+* Conversation
+
+Canonical Conversation 由同一 Account 的 active Email 按 remote =threadId= 分组。
+Active generation 发布前，=Thread/get= 提供按需、可丢弃的 Conversation projection；
+canonical membership 仍由 generation 拥有。
+
+Reply tree 只使用 Conversation membership 内的 Message-ID、In-Reply-To 和 References evidence。
+Missing、duplicate 和 cycle 关系显式降级，strict edge 只使用唯一解析出的 parent。
+
+* Operation
+
+=PendingOperation= 固定 =operation_id=、Account、创建时选择的 local Email ids、用户意图、phase 和 per-target result。
+用户动作只有在 Accepted evidence 持久化后才算被 Chidu 接受。
+
+Operation overlay 将 unresolved 或 known-success intent 叠加到 active generation 上。
+JMAP response 可以 partial success，response loss 必须保留 unknown outcome，undo 必须基于当前 cache 创建新的 operation。
+
+跨 Account 命令拆成独立 child operation，界面只负责汇总结果。
+Draft 与 SubmissionAttempt 的额外语义见 [[file:identity.org][身份与发送模型]]。
+
+* View 与 materialization
+
+Summary 是 active generation、metadata、preview 和 local intent overlay 的 bounded derived view；它没有独立
+row owner，也不保存 queryState。Search、Conversation、notification 和 FTS 是可删除重建的
+materialization。Checkpoint 和 operation evidence 负责 reducer input 与 reconciliation。
+
+任何返回给 UI 的 row 都必须验证 Account accessibility、=principal_epoch= 和 active Email membership。
+

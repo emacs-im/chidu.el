@@ -1,0 +1,199 @@
+#+title: Chidu 界面指南
+#+language: zh-CN
+
+* Root directory
+
+=M-x chidu= 打开 Endpoint、Account 和 Mailbox 目录。
+目录先显示本地 Store 中的内容，并在 Session refresh 期间保留最后一次 committed rows。
+
+| key | action |
+|-----+--------|
+| =RET= | 打开 Mailbox，或折叠、展开 group |
+| =TAB= | 折叠、展开 Endpoint 或 Account |
+| =s= | 同步 point 所属 Account 的 Mailbox snapshot |
+| =? I= | 显式建立或追平 canonical Email index；首次运行可能遍历完整 Account |
+| =? C= | 取消正在运行的 Email index |
+| =g= | 重读本地目录并刷新 Session |
+| =G= | 重启 Chidu |
+| =S= | 搜索 point 所属 Account |
+| =A= | 打开 point Endpoint 或选择 Endpoint 的 JMAP AddressBooks |
+| =? c= | 为 point Account 建立新的 structured Compose workspace |
+| =? d= | 恢复已有 local Compose workspace |
+
+* Contacts
+
+=M-x chidu-contacts= 打开当前或选择 Endpoint 的 JMAP AddressBooks。Root 中 =A=、Evil =g a= 和 Root
+Transient的 Address Books入口执行同一命令。
+
+AddressBook directory按服务端 =sortOrder= 排序，Subscribed books默认展开；未订阅 books位于折叠的
+Other Address Books section。状态显示 default、subscribed、writable或read-only；没有 =mayRead= 的 book
+不能打开。
+
+Contact list执行 =ContactCard/query(inAddressBook, optional text)=，按 =updated= descending做bounded
+server projection。=/= 替换server search，=+= 使用stable anchor加载下一页，=g= 刷新exact query。=RET=
+打开 targeted ContactCard detail，=c= 给preferred email建立structured composition。
+
+详情页显示selected JSContact fields：name、uid、kind、email、phone、organization、title、address、online
+service、notes、group member UIDs、AddressBook memberships和dates。当前页面只读；完整协议与后续mutation边界见
+[[file:contacts.org][JMAP Contacts 浏览与管理边界]]。
+
+* Compose
+
+=M-x chidu-compose= 打开专用 structured editor；Root Transient 的 =c= 使用 point 所属 Account。
+=M-x chidu-open-compose-workspace= 恢复已有 local Compose workspace。
+
+=From= 是 JMAP Identity selector。=To/Cc/Bcc/Reply-To= 在 =M-TAB= 时查询 Session 的 primary JMAP
+Contacts Account：同一 request先读取 subscribed/readable AddressBooks，再用 =ContactCard/query= 的
+=text= filter和result reference取得 =ContactCard/get=。JSContact姓名、email和pref直接形成候选。
+普通输入和render path不访问网络；CAPF non-exclusive，因此其他 Emacs联系人 package仍可参与。
+
+| key | action |
+|-----+--------|
+| =TAB= / =S-TAB= | 下一个或上一个 structured field |
+| =M-TAB= | JMAP ContactCard 收件人补全 |
+| =C-c C-i= | 切换 From Identity |
+| =C-x C-s= / =C-c C-s= | checkpoint 后保存为服务器 Draft |
+| =C-c C-l= | 只更新本地 recovery checkpoint |
+| =C-c C-k= | 明确选择关闭策略 |
+| =C-c ?= | 打开 Compose Transient |
+| Transient =D= | 删除从未发布的 local-only workspace |
+| =C-c C-c= | 明确报告 Submission 尚未实现 |
+
+服务器保存解析唯一可写的 Drafts Mailbox，先持久化 DraftPublishAttempt，再执行 =Email/set= create。
+若 create response丢失，UI保留 unknown；下一次 Save用 stable Message-ID在 Drafts中做 bounded
+query/get reconciliation，不会盲目创建第二只 Draft。新 revision确认后才清理旧 Draft；cleanup失败不回滚新 head，也不阻塞
+下一版保存。
+
+Local checkpoint 只意味着 recovery copy 已更新；只有 JMAP 确认后才显示 “Draft saved to server”。
+Compose 使用普通 Emacs editing/undo 和原生 Evil operator，正文中不显示按键提示。
+
+* Summary 与 Search
+
+Mailbox 打开 =chidu-summary-mode=，并显示 sender、subject、preview、time、read state、flag 和 attachment 状态。
+Summary 直接从 active generation 做 bounded SQLite read；=g= 重读当前 canonical state，=+= 提高本地
+LIMIT 以显示更早邮件，两者都不访问网络。没有 active generation 时明确提示从 Account menu 建立
+Email index，不回退到旧 Summary cache。
+
+=chidu-search-mode= 执行 Account 或 Mailbox 范围的 JMAP server search。Search 的 =g= 刷新远端
+query，=+= 追加下一只 server page。
+结果按 Email 展示而不折叠 Thread，=RET= 以命中邮件为 focus 打开 Conversation，=o= 打开单封阅读器。
+
+搜索语法直接编译为 JMAP Filter。
+
+#+begin_example
+emoji width
+from:alice@example.org subject:emoji
+is:unread has:attachment after:2026-08-01
+in:inbox list:emacs-devel.gnu.org
+header:List-Id=emacs-devel.gnu.org
+#+end_example
+
+支持的字段是 =text/from/to/cc/bcc/subject/body/before/after/is/has/list/header/in=。
+裸词合并为一个 =text= 条件，多个条件使用 =AND=；
+Mailbox 名称或 role 必须能够唯一解析。
+
+Summary 和 Search 共用以下按键。
+
+| key | action |
+|-----+--------|
+| =?= | 打开当前上下文的 Transient menu |
+| =RET= | 打开 reply-tree Conversation |
+| =o= | 打开 standalone reader |
+| =g= | Summary 重读 canonical Store；Search 刷新远端 query |
+| =+= | Summary 扩大本地 bounded window；Search 追加 server page |
+| =m=/=u=/=t= | mark、unmark 或 toggle 当前行或 region |
+| =M=/=U=/=~= | mark all、clear all 或 toggle visible rows |
+| ={=/=}= | 跳到上一个或下一个 marker |
+| =!=/=R=/=s= | mark read、mark unread 或 toggle read |
+| =a=/=V= | archive 或 move |
+| =d=/=x= | flag for Trash 或执行已 flag 的 Trash plan |
+| =S= | 搜索当前 Mailbox，或在 Search 中编辑 query |
+| =n=/=p= | 下一条或上一条 |
+| =q= | 退出窗口 |
+
+* Selection 与 Trash
+
+Summary 和 Search 有两种互斥 marker：普通 process mark =*= 和 Trash flag =D=。
+普通邮件命令按 =process marks > active region > point= 解析目标；
+=x= 单独消费 Trash flags。
+
+=m= 写入 =*=，=d= 写入 =D=，=u= 清除当前 marker，=t= 在空白与 =*= 之间切换。
+=U= 清除全部 marker，=M= 标记全部可见行，=~= 切换没有 =D= 的可见行。
+Marker state 只存在于当前 view。
+
+=d= 写入 view-local Trash plan；
+=x= 收集 =D= rows、请求确认，并执行可恢复的 move to Trash。
+Permanent delete 当前没有绑定。
+
+* Read state 与通知
+
+Read state 只通过 =!=、=R= 和 =s= 修改；
+pending 或 failure 会同步投影到所有已打开界面。
+
+新邮件通知来自 canonical live sync 新加入 active generation 的 Email。
+所有 changes page 提交完成后，Chidu 再按 bounded local ids 读取最终 Mailbox 和 keyword state；
+同一轮中随后被移动、设为已读或销毁的 Email 不会按旧观察通知。
+
+通知 eligibility 要求邮件仍在 Inbox、尚未读，并且当前 view 没有显示对应内容。
+=chidu-new-mail-notifications= 只控制桌面通知；关闭它不会停止 canonical live sync。
+=chidu-event-source-enabled= 只控制 push wake，低频 polling 始终负责断线 catch-up。
+
+* Conversation
+
+=chidu-conversation-mode= 以选中 Email 为 focus 显示 reply tree。
+Focused scope 由 focus 的祖先、focus 和后代组成。
+
+Missing parent 显示为 ghost，duplicate Message-ID 和 cycle 使用确定的降级规则。
+Focus 的祖先显示为 depth-0 spine；
+只有 focus 的后代相对缩进，实际 reply depth 保留在本地数据中。
+
+Message fold 和 replies fold 相互独立。
+隐藏正文时保留 heading；
+重新展开回复后，每封邮件恢复原有的正文状态。
+
+| key | action |
+|-----+--------|
+| =RET= | 将 point 邮件设为新的 focus |
+| =v= | 显示或隐藏当前正文 |
+| =TAB= | 切换当前 attachment inline 状态，否则切换回复子树 |
+| =? t=/=? O=/=? C= | toggle、open 或 close 回复子树 |
+| =n=/=p= | 下一封或上一封可见邮件 |
+| =g= | 刷新 Thread membership 和 reply metadata |
+| =!=/=R= | 标为已读或未读 |
+| =o= | 打开 standalone reader |
+| =q= | 退出窗口 |
+
+* 正文与附件
+
+Standalone reader 和展开的 Conversation entry 都先读取已缓存正文。
+纯文本优先；没有纯文本时使用 =shr= 渲染本地 HTML，并禁止任意远程图片请求。
+
+只有当前 Email 的 attachment manifest 能够通过 =cid:= 或 Content-Location 唯一证明的图片，才可以在正文中显示。
+未缓存图片只显示明确占位，必须由用户主动下载。
+
+附件使用 media card 展示名称、大小、MIME type、disposition 和传输状态，但不显示 remote blob id。
+在 card 上按 =RET= 打开附件，按 =TAB= 切换可 inline 的文本、补丁或图片。
+
+=?= 的 Attachment group 提供以下动作。
+
+| key | action |
+|-----+--------|
+| =A= | 打开附件，必要时先下载 |
+| =i= | 显示或隐藏 inline 内容 |
+| =D= | 下载或重试到 private cache |
+| =C-d= | 取消当前调用方的下载 interest |
+| =S= | 保存到用户选择的路径 |
+
+多个附件时，point 所在的 media card 确定操作目标。
+=message/rfc822= 附件通过 =Email/parse= 打开 Blob-scoped 只读解析视图。
+
+* Transient 与 Evil
+
+所有 Chidu 界面都用 =?= 打开上下文 Transient menu。
+常用操作保留直接按键，菜单负责动作发现、当前可用性和不常用命令。
+
+Major-mode map 继续提供 Emacs-state contract，Evil 层保留 motion、operator、visual state 和 =TAB/C-i= jump。
+Summary 和 Search 使用 =m/u/U/t/M/~=、=d/x=、=a=、=RET= 和 =g r/g +=。
+Conversation 使用 =RET=、=<tab>=、=za/zc/zo= 和 =g r=。
+
+=chidu-evil-enable-integration= 可以关闭 Evil 集成，=chidu-evil-initial-state= 可以修改 Chidu buffer 的初始 state。

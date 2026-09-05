@@ -1,0 +1,101 @@
+#+title: Chidu 贡献指南
+#+language: zh-CN
+
+* 依赖
+
+Chidu 需要 Emacs 29.1、Appkit 0.2.18、plz 0.9.1、Transient 0.7.0 和 curl 8.4.0。
+Transient 是完整命令发现入口，不要增加手写 help buffer 或冗长 modal prefix。
+curl 8.4.0 是 unknown-length transfer 的 streaming size hard bound；Chidu 在 HTTP effect 前执行版本门禁，并且永不启用 =--location-trusted=。
+
+* 本地验证
+
+安装依赖并运行干净字节编译和 ERT：
+
+#+begin_src sh
+eask install-deps
+eask run script test
+#+end_src
+
+修改已经安装的 dependency recipe 或 tag 后，使用：
+
+#+begin_src sh
+eask install-deps --force
+#+end_src
+
+运行存储模型：
+
+#+begin_src sh
+python3 tools/jmap-storage-audit/bootstrap_model.py
+python3 tools/jmap-storage-audit/changes_chunk_model.py
+python3 tools/jmap-storage-audit/query_prefix_model.py
+python3 tools/jmap-storage-audit/split_get_state_model.py
+#+end_src
+
+* Live smoke
+
+Read-only live smoke 使用 production SQLite Store 和 disposable private data root。
+
+#+begin_src sh
+CHIDU_JMAP_SESSION_URL=https://example.test/.well-known/jmap \
+CHIDU_JMAP_USER=user@example.test \
+CHIDU_JMAP_PASSWORD_FILE=/private/path/to/password \
+  eask exec emacs --batch -Q -L . -l tools/chidu-live-smoke.el
+#+end_src
+
+Password file 必须属于当前 uid，并使用 0600 mode。
+Smoke 不打印 secret、id、姓名、邮件 metadata 或正文，并在结束时删除临时下载文件。
+
+只读 smoke 覆盖 Session、Identity/get、Mailbox/get、Email query/get/changes、SearchSnippet/get 和 Thread/get；
+正文、附件、canonical live Email sync 和 membership baseline 使用同一 production path。
+Mutation smoke 必须可逆，并在退出前恢复服务器原状态。
+
+Remote Draft semantic contract 另有一个可逆 smoke：它上传固定小 Blob，创建带唯一 Message-ID 的
+attachment Draft，把真实 =Email/get= wire 交给 production Elisp observation/projector，再按该
+Message-ID reconcile、destroy 并确认零残留。它不打印 secret、对象 id、header 或正文：
+
+#+begin_src sh
+python3 tools/jmap-draft-contract-smoke.py \
+  --session-url https://example.test/.well-known/jmap \
+  --user user@example.test \
+  --password-file /private/path/to/password
+#+end_src
+
+* 修改原则
+
+- JMAP wire value 在成为 Store observation 前完成 validation；
+- Store 只公开 closed operation，不接受 arbitrary SQL 或 transaction callback；
+- 网络等待期间不持有 Store transaction；
+- UI 只读取已提交 projection，不在 render path 访问网络；
+- 新 process 或 native boundary 必须有产品要求、安全要求或 benchmark；
+- Store 性能结论必须附带可复现 workload；
+- 改动 exported symbol 前检查并迁移所有 caller；
+- Clean cutover 删除旧 path，不保留 alias、fallback 或第二套 convention。
+
+* SQLite current format
+
+Schema change 必须更新唯一的 executable current-format manifest。
+Fresh database 运行 initializer；
+reopen 核对 table、column、constraint、foreign key 和 index，drift 返回 =rebuild-required=。
+格式发布前，disposable Store 直接重建，维护者的本地数据使用一次性转换。
+
+* SQLite backend
+
+=chidu-store-sqlite.el= 保留唯一 exhaustive dispatch，各职责文件通过静态 composition 接入。
+
+Runtime DML 使用 =chidu-sql-select= 或 =chidu-sql-execute= 和 literal AST。
+运行时值在对应 SQL use 旁写成 =[:bind ELISP-FORM]=；
+lexical hole 是 runtime binding 的唯一参数表示。
+
+固定 relational read 使用 structured SELECT，配合 =chidu-sql-map= 或 =chidu-sql-one=。
+运行时值不得进入 identifier、=:raw= 或 =[:literal]=，raw SQL 只用于 SQLite lifecycle 和 schema introspection。
+
+=:row= 的 conflict behavior 必须显式写为 =:update= 或 =[:update EXPR]=。
+
+* 测试要求
+
+测试 observable contract、边界、状态转换、优先级和真实错误。
+测试必须确定、隔离、可重复运行，并在 plausible bug 下失败。
+
+新增 durable transition 时覆盖 success、rejection、partial result 和 response loss；
+restart 和 stale callback 使用同一 contract。
+新增 query path 时至少覆盖 empty result、page boundary、cursor drift、notFound 和 resource limit。

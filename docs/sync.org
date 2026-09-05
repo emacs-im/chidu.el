@@ -1,0 +1,185 @@
+#+title: Chidu JMAP 同步模型
+#+language: zh-CN
+
+* 目标
+
+Email sync 把当前 viewer 对一个 Account 可见的 JMAP Email cache 收敛到本地 active generation。
+它必须满足以下条件：
+
+1. Durable checkpoint 支持任意 request 或 Store commit 前后的恢复；
+2. Bootstrap 在 concurrent create、update、destroy 和 thread merge 下收敛 membership；
+3. 每个 request、response、Store batch 和内存集合都有明确上限；
+4. Building generation 通过一次原子 activation 进入普通查询；
+5. Property coverage 和 visibility gate 覆盖 partial get 与 shared Account。
+
+* State 与 profile
+
+Mailbox、Email、Identity 和 EmailSubmission 分别保存 opaque type state。
+Exact query 的 queryState 和 Session state 使用独立 namespace。
+
+Standard Email profile 分开 write-once metadata、mutable =mailboxIds/keywords= 和 lazy materialization。
+Created Email 读取 required metadata，Updated Email 读取 tracked mutable properties；
+profile 扩展先完成 backfill，再标记 complete。
+
+* Durable phase
+
+Email checkpoint 使用以下 phase：
+
+#+begin_example
+Uninitialized
+  -> Enumerating
+  -> MembershipCatchup
+  -> Hydrating
+  -> MetadataCatchup
+  -> Activating
+  -> Live
+#+end_example
+
+Checkpoint 保存 generation owner、profile version、remote state、queryState、anchor、keyset cursor 和 local revision。
+Offline、timeout 和 rate limit 只影响 runtime backoff，不改写已经提交的 durable phase。
+
+* Bootstrap
+
+** Baseline enumeration
+
+流程先用 =Email/get(ids=[])= 取得 Email state =e0=，再执行完整 =Email/query=。
+Query 使用 =filter=null=、=sort=null=、=collapseThreads=false= 和 =calculateTotal=false=。
+
+第一页保存 queryState，后续页以最后提交的 remote Email id 为 anchor，并使用 =anchorOffset=1=。
+Wire page 和 Store transaction 分离；
+每个 bounded chunk 提交 identity、building membership、tail、count 和 checkpoint revision。
+
+非空页提交要求 queryState、anchor、position、id uniqueness 和 resource limit 全部匹配。
+Empty page 结束枚举；
+queryState drift 会替换未发布的 building generation，并从新的 =e0= 重建。
+
+** Membership catch-up
+
+Query snapshot 从 =e0= 开始 catch-up，并重复调用 =Email/changes= 直到 =hasMoreChanges=false=。
+每个 response 先有界规范化 overlap；
+=destroyed > created > updated= 决定 membership transition。
+
+每个 response 都推进 intermediate state 和 checkpoint revision。
+=cannotCalculateChanges= 触发新的 building generation 和完整 bootstrap。
+
+** Required metadata hydration
+
+Hydration 以 durable local Email id cursor 分批读取 building members。
+缺少 required metadata 的 member 使用 full profile，已有完整 write-once metadata 的 member 只读取 mutable profile。
+
+每个 request group 使用同一 properties profile，=list ∪ notFound= 必须精确覆盖请求 ids。
+Full result 补全 write-once fragment 并替换 mutable sets；
+mutable result 只替换 mutable sets，notFound 删除 member。
+
+每个 building member 都必须参加一次 current =Email/get=。
+这一步会删除曾被 query 捕获、但在第一轮 changes 中完全省略的短命 ghost。
+
+** Metadata catch-up
+
+Hydration 完成后，从第一轮得到的 state 重复执行一轮 bounded changes-and-get：
+
+#+begin_example
+Email/changes(sinceState=S)
+  -> normalize created / updated / destroyed
+  -> Email/get(created, required metadata)
+  -> Email/get(updated-only, mutable properties)
+  -> one Store transition
+#+end_example
+
+Get-ahead observation 可以写入 cache，而 durable checkpoint 保持在 =changes.newState=；
+下一轮继续从该 changes state 读取。
+一轮在 =hasMoreChanges=false= 且所有实际 get state 匹配 =changes.newState= 时闭合。
+没有发出 get 的轮次自动满足 state-match 条件。
+
+** Activation
+
+闭合后，Store 验证 generation owner、checkpoint revision、required profile 和 Mailbox relation；
+旧 active generation 退休，building generation、Account pointer 和 Email state 在同一 transaction 发布。
+
+Activation 前所有普通查询继续读取旧 active generation。第一次建立 index 时尚无旧 generation，
+Summary 明确返回 =email-index-unavailable=；只有用户从 Account Transient 显式执行
+=Build Email index= 才会启动完整 bootstrap。
+
+* Active generation 与后续 live sync
+
+Bootstrap、第二轮 catch-up 和 activation 已经闭合。Mailbox Summary 直接读取 active generation；
+不存在独立 Summary projection、queryState 或网络分页。
+
+Summary read 使用当前 Mailbox 的 remote id 过滤 generation membership，按
+=receivedAt DESC, local_email_id DESC= 排序，并读取 =limit + 1= 条作为 next-page probe。
+=+= 只是提高本地 bounded LIMIT 后重新读取 SQLite；=g= 也只重新读取当前 canonical state。
+Pending seen、move 和 Trash operation 作为 overlay 参与同一查询，成功 settlement 原子更新 active
+keywords 或 mailboxIds。
+
+EventSource 和低频 polling 只产生 Account wake。Wake 在 Account lane 中合并并串行执行：
+
+#+begin_example
+Email/changes(sinceState=active.state)
+  -> normalize destroyed > created > updated
+  -> Email/get(created, required metadata)
+  -> Email/get(updated-only, mutable properties)
+  -> one active-generation Store transition
+  -> repeat until state-matched closure
+#+end_example
+
+Created Email 补全 required metadata并加入 active generation；Updated Email 完整替换 tracked
+=mailboxIds/keywords=；Destroyed 或 notFound 删除 generation membership。每个 page 都推进 durable
+Email state 和 revision，因此 network、Emacs 或 Store commit 前后的重启从最后一次提交继续。
+
+一轮有任何 canonical object 变化时，Search query lease 变 stale；打开的 Summary 和 Search 只重读本地
+Store。未来 =Email/queryChanges= 只负责修复 Search ordered window，Canonical Summary 不需要第二只
+query lease。
+
+=cannotCalculateChanges= 先取得新的 Email state，再创建 replacement building generation。Checkpoint
+转交给 building generation，但旧 active generation 保持 published 和可读；完整 bootstrap 闭合后才在
+一只 transaction 中退休旧 generation并激活新 generation。第一次尚无 active generation 时，live wake
+明确返回 =email-index-unavailable=，绝不隐式开始全量索引。
+
+所有 live pages 闭合后，runtime 只保留 bounded new-member local ids，并从最终 active generation做一次
+targeted read。这样同一轮后续的 update、move、=$seen= 或 destroy 会先反映到通知候选。结果超过上限时
+只标记 truncated，不在 Emacs heap 中保存完整新邮件集合。
+
+Search 仍是 query-bound server materialization。它保存 exact filter、sort、queryState、cursor、
+revision 和有界 ordered prefix，并在一只 JMAP request 中组合 =Email/query=、result-reference
+=Email/get= 与 =SearchSnippet/get=。每页多取一个 query id 作为 probe；append 必须同时匹配
+queryState、cursor 和 local revision。Stale lease 通过显式 refresh 建立新的 bounded query。
+
+* Conversation 与 body
+
+Conversation refresh 使用 =Thread/get= 取得 membership；
+有界 =Email/get= 随后取得 summary 和 reply header evidence。
+Header 只在该 membership 内选择 parent，duplicate Message-ID、missing parent 和 cycle 使用确定规则。
+
+Body fetch 把 text、HTML 和 attachment metadata 写入 per-Email materialization revision。
+
+* Mutation
+
+所有 mutation 先持久化完整 operation 和 target set，再 dispatch JMAP effect。
+UI 立即显示 optimistic overlay，远端 partial success 或 response loss 按 target 单独结算。
+
+普通 Mailbox move 使用同一 PatchObject 增加 destination 并删除 source，保留其他 membership。
+Move to Trash 先读取 authoritative membership，再按 RFC 8621 语义把完整 =mailboxIds= 替换为唯一 Trash Mailbox。
+=$seen= 使用 one-target per-key patch，并在同一 Email 上串行相反命令。
+
+Canonical Email checkpoint 通过后续 =Email/changes= 推进；
+targeted get、changes 和 durable evidence 共同 reconciliation unknown result。
+
+* Mailbox、Identity 与 Submission
+
+Mailbox、Identity 和 EmailSubmission 各自使用独立 reducer 和 type state。
+Mailbox changes 仅在 =updatedProperties= 明确只含 count 时局部更新；
+其他变化执行 =Mailbox/get=。
+
+Identity 的 =id/email= 按 write-once 处理，其余属性按 current observation 替换。
+EmailSubmission state 提供 reconciliation evidence，本地 =SubmissionAttempt= 持有 durable send state。
+
+* EventSource 与 notification
+
+EventSource 把 =Email= 和 =EmailDelivery= StateChange 合并为 Account wake；=EmailDelivery= 只作为
+push hint，不拥有独立 state。断线后退避重连，长期无 event 时低频 polling 仍运行同一 canonical
+live sync，因此关闭 EventSource 或桌面通知都不会停止 cache 收敛。
+
+Notification 不保存第二套 baseline、checkpoint 或 dedup table。正常 live transition 返回本轮
+新加入 active generation 的 bounded local ids；round 闭合后 targeted canonical read 取得最终 Summary
+row、Mailbox memberships 和 pending seen overlay。只有仍在 Inbox、仍未读且当前 view 未显示的 Email
+进入通知策略。=chidu-new-mail-notifications=nil= 只关闭 presentation。

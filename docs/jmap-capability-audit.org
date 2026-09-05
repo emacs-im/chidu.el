@@ -1,0 +1,132 @@
+#+title: Chidu JMAP 能力审计
+#+language: zh-CN
+
+* 状态定义
+
+- 已实现：有 production adapter、closed Store transition 和用户可达路径，或已经形成明确的内部 canonical transition；
+- 部分实现：只有 bounded projection、只读路径或尚未闭合的 durable phase；
+- 未实现：不能从当前产品路径使用。
+
+* 能力矩阵
+
+| JMAP 能力 | 状态 | 当前边界 |
+|-----------+------+----------|
+| Session discovery 和 Account capability | 已实现 | =chidu-endpoints= 决定目标，=auth-source= 只提供 secret |
+| Result reference | 已实现 | Search 在单个 request 中连接 query、get 和 snippet |
+| EventSource | 已实现 | 只产生 wake，durable =Email/changes= 或 polling 负责闭合 |
+| Blob download | 已实现 | 阅读附件与 external Draft checkout 共用 Session =downloadUrl=；bounded authenticated transfer、exact size、private atomic publish |
+| Blob upload | 已实现 | Compose resource按 exact revision上传，验证 account、media type、size和返回 =blobId= |
+| =Blob/copy= | 未实现 | Cross-account Blob reuse 尚不可用 |
+| =Mailbox/get= | 已实现 | 使用 bounded full snapshot |
+| =Mailbox/changes/query/queryChanges= | 未实现 | Mailbox 增量 state machine 尚未建立 |
+| =Mailbox/set= | 未实现 | Create、rename、delete 和 subscription 管理缺失 |
+| =Thread/get= | 已实现 | 提供 on-demand Conversation membership，不定义 canonical Email membership |
+| =Thread/changes= | 未实现 | 尚无独立 Thread checkpoint |
+| =Email/get= | 已实现 | Canonical hydration、Search、Conversation、正文、附件和 mutation reconciliation |
+| =Email/query= | 已实现 | Canonical baseline enumeration 与 Search pagination；Summary 不再调用它 |
+| =Email/changes= | 已实现 | Bootstrap、state-matched catch-up、activation 和 active-generation live wake 共用一条 reducer |
+| =Email/queryChanges= | 未实现 | 尚不能增量修复 Search ordered window |
+| =Email/set= | 部分实现 | mutation update、plain-text Draft create/replace和版本校验 predecessor cleanup已闭合；richer external Draft与发送仍明确拒绝或由独立 reducer负责 |
+| =Email/copy= / =Email/import= | 未实现 | Cross-account copy 和 raw import 缺失 |
+| =Email/parse= | 已实现 | =message/rfc822= Blob-scoped read-only view，不创建 =EmailRecord= |
+| =SearchSnippet/get= | 已实现 | Server-backed Search projection |
+| =Identity/get= | 已实现 | 只读 Identity discovery |
+| =Identity/changes= / =Identity/set= | 未实现 | 增量刷新和 Identity 管理缺失 |
+| =AddressBook/get= | 已实现 | rights-aware AddressBook directory，展示 subscribed与显式请求的其他 books |
+| =ContactCard/query/get= | 已实现 | Compose补全、AddressBook-scoped bounded list、anchor pagination和targeted detail |
+| =AddressBook/changes/set= | 未实现 | AddressBook增量刷新、subscription/default和管理缺失 |
+| =ContactCard/changes/queryChanges/set= | 未实现 | 当前 list为server projection；增量缓存和编辑尚缺 |
+| EmailSubmission | 未实现 | current remote Draft publication已闭合；submission outcome reducer尚缺 |
+| VacationResponse | 未实现 | 不属于当前 mail reader 核心路径 |
+
+* 关键缺口
+
+** Live canonical Email generation
+
+Durable bootstrap 已完成 query enumeration、两轮 =Email/changes=、coverage-aware hydration、state-matched
+closure 和 atomic activation。Summary 只读取 active generation；旧 Summary projection、JMAP Summary
+adapter、旧通知 checkpoint 和双轨 fallback 已删除。没有 active generation 时，用户必须从 Account
+menu 显式执行 =Build Email index=。
+
+EventSource 和低频 polling 合并 Account wake，并在 Account lane 中串行运行 bounded
+=Email/changes + Email/get= round。Created、updated、destroyed 和 notFound 原地更新 active generation；
+Search lease 变 stale，打开的 Summary/Search 从本地 Store 重读。=cannotCalculateChanges= 建立 replacement
+building generation，旧 active generation 在原子 activation 前持续可读。桌面通知只消费最终 canonical
+state 中仍存在、仍未读且仍属于 Inbox 的 bounded new-member rows。
+
+** Compose 与 Submission
+
+当前已完成专用 structured Compose mode、local ComposeWorkspace revision CAS、RFC 9610 ContactCard补全，
+以及 plain-text =ComposeDocument → Email/set create= publication。DraftPublishAttempt在 HTTP 前进入 durable
+unknown；response loss用 per-attempt Message-ID + Drafts + =$draft= 做 bounded reconciliation。
+新 remote head确认后，predecessor cleanup独立持久化，以 Blob evidence重验 Drafts membership和
+=$draft=，再用本次 =Email/get state= 执行 =ifInState= destroy。
+
+Canonical Drafts view、Store-first resume、remote checkout/discard和双向 Blob resource路径对当前
+plain-text semantic normal form闭合。External checkout先把完整 =headers/bodyStructure/bodyValues= 解码为
+strict RemoteDraftObservation；以 =bodyStructure= 为唯一结构事实，其他 convenience projection只做exact
+consistency check；projector再匹配 =text/plain | multipart/mixed(text/plain, attachment+)= grammar。
+From必须精确绑定到compiler实际会输出的唯一Identity。Chidu-created attachment先冻结到private SHA-256
+store再上传；external attachment按wire order做bounded download、exact size校验和CAS安装，全部成功后才
+原子创建ComposeWorkspace。未知/重复header、reply metadata、额外Mailbox/keyword、HTML或 richer MIME
+在任何本地editable state建立前明确拒绝。
+
+尚缺 ReplyPlan、strict recipient parser 和 EmailSubmission outcome reducer。
+
+** Contacts
+
+当前已完成独立 read-only Contacts browser：=AddressBook/get= 保留 sortOrder、subscription和rights；
+=ContactCard/query= 按 AddressBook和可选 text filter做bounded server projection，result reference驱动
+=ContactCard/get=，adapter恢复query order并严格结算coverage。Contact detail按需读取 selected JSContact字段，
+不建立 SQLite Contacts mirror，也不把read projection冒充editable完整 Card。
+
+尚缺 AddressBook/ContactCard changes、queryChanges、set、group UID resolution、photo Blob与sharing管理。
+
+** Search projection repair
+
+Search 在 query lease 失效后重新执行 bounded query；未来用 =Email/queryChanges= 修复 ordered window。
+Summary 是 canonical local view，不参与这条 query-repair 路径。
+
+** Mailbox 与 Identity 管理
+
+Mailbox 和 Identity 当前只有读取路径。
+Create、rename、delete、subscription、Identity edit 和对应的 independent type state reducer 尚未实现。
+
+* 已验证的富内容路径
+
+- HTML 只消费同一 Email attachment manifest 中唯一匹配的 =cid= 或 Content-Location，SHR 不请求任意远程图片；
+- Attachment 使用 private cache、显式下载、size verification 和 atomic publish；
+- =Email/parse= 打开 attached message 的 bounded read-only view，不合成顶层 Email identity；
+- Compose resource upload/download已实现；Raw RFC import/export和cross-account Blob copy尚未实现。
+
+* 审计原则
+
+Remote Draft checkout 把失败明确分成三类：非法 JMAP wire或projection contradiction最终映射为
+=invalid-jmap-response=；合法但超出当前 semantic normal form的值返回non-retryable
+=draft-*-unsupported=；Mailbox/keyword/state变化返回独立race failure。没有请求到的开放世界metadata
+不能被当作不存在，因此 representability request必须包含完整raw =headers= 和完整body properties。
+
+完成状态同时要求 wire validation、resource limit、Store ownership 和 restart recovery；
+UI reachability 与真实 JMAP smoke 提供端到端证据。
+Server limit 和 capability 由 Session observation 提供。
+
+* Implemented: bidirectional Blob-backed Draft resources
+
+Chidu uses the Session =uploadUrl= for immutable local Compose resources,
+validates the returned =accountId=, =blobId=, media type, and size, and stores the
+Blob id against an exact local Compose revision.  The JMAP Draft compiler emits
+=text/plain= for an attachment-free document and =multipart/mixed= with ordered
+blob-backed attachment parts otherwise.
+
+Upload response loss is retryable and is deliberately not modeled as an
+Email-style unknown mutation: repeated upload may allocate another equivalent
+Blob but cannot duplicate a Draft or send a message.  =Email/set= publication
+continues to use its durable unknown/reconciliation state machine.
+
+For a Draft created outside Chidu, checkout expands the authenticated Session
+=downloadUrl=, streams each Blob directly into a private bounded file, verifies
+the exact immutable size, computes local SHA-256 evidence, and installs it in the
+same content-addressed store.  The original remote =blobId= remains attached to
+the resource.  Only after all ordered resources succeed does one closed Store
+transition create the ComposeWorkspace, so failure cannot expose a half-editable
+Draft.

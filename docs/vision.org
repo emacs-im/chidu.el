@@ -1,0 +1,21 @@
+#+title: Chidu 产品定义
+#+language: zh-CN
+
+* 定义
+
+Chidu 是一个本地优先、JMAP-first、查询驱动、多账号的 Emacs 邮件客户端。
+它让用户在 Emacs 中完成邮件阅读、整理、检索、撰写和发送，同时保留离线访问与重启恢复能力。
+
+* 产品契约
+
+1. 已缓存内容从本地已提交状态读取，网络失败不能清空可用数据；
+2. Unified view 必须保留 Account 来源、能力和逐账号操作结果；
+3. 用户操作必须区分 pending、confirmed、rejected、conflict、partial 和 unknown outcome；
+4. Compose 必须明确显示 Identity、提交 Account、Route 和回复范围；
+5. 原始 RFC bytes、MIME part 和附件必须能够无损取得；
+6. 远端事实、本地意图和可重建投影必须由不同的数据模型承载。
+
+* 首版范围
+
+首版闭合标准 JMAP Mail 路径，并通过 Session capability 协商可选扩展。
+邮件列表与补丁能力属于增强功能，关闭后仍须满足普通邮件客户端基线。

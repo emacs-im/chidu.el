@@ -1,0 +1,85 @@
+#+title: Chidu 目标身份与发送模型
+#+language: zh-CN
+
+* Identity 与 Route
+
+=Identity= 回答“以谁的名义写信”，并由所属 Account 中的 JMAP =Identity/get= 发现。
+它保存 local id、remote id、Account、name、email、replyTo、bcc、signature 和本地 encryption policy。
+
+Identity 的 =id= 和 =email= 按标准 write-once，其余字段是 current observation。
+服务端发现的 Identity 提供发送授权，本地 preference 只在这些 Identity 之间选择。
+
+首版只有一种 Route：
+
+#+begin_example
+SubmissionRoute = JmapSubmission(account_id)
+#+end_example
+
+Route 回答“由哪个 Account 提交”。
+有效 binding 要求 Identity 可用、Identity 属于 Route Account，并且该 Account 当前公布 JMAP Submission capability。
+
+* 解析
+
+Identity 按以下顺序解析：
+
+1. ComposeWorkspace 已绑定的 Identity；
+2. 用户在 Compose 中显式选择的 Identity；
+3. 匹配 =List-Id=、收件人、回复类型或 Workspace 的显式规则；
+4. 原邮件实际投递到的地址；
+5. 原邮件 Account 中唯一匹配的 Identity；
+6. 当前 Account scope 中唯一拥有可用 Route 的 Identity；
+7. 仍不唯一时保持 unresolved，并询问用户。
+
+Parser 报告 =To=、=Cc=、=X-Original-To=、=Delivered-To= 和 =X-Envelope-To= 等投递证据；
+resolver 决定这些 evidence 与 Identity 的匹配。
+
+Route 按以下顺序解析：
+
+1. ComposeWorkspace 已绑定且仍然有效的提交 Account；
+2. 用户显式选择、并与 Identity 属于同一 Account 的 Route；
+3. Identity 所属 Account 当前派生的 JMAP Route；
+4. 仍不能确定时保持 unresolved，并询问用户。
+
+=SubmissionAttempt= 的创建要求 resolved Identity 和 Route。
+后续组件只消费完整 =IdentityBinding=。
+
+* ComposeWorkspace 与 Draft
+
+Chidu 的可编辑值是 structured =ComposeDocument=；本地 =ComposeWorkspace= 只是 checkout 和
+crash/offline recovery journal。JMAP Draft Email 才是 Account 中跨客户端共享的 Draft revision。
+详细边界见 [[file:compose.org][Compose、Draft 与 Submission]]。
+
+Workspace 固定 Account 和当前 Identity，并保存：
+
+#+begin_example
+local revision
+base remote Email id
+published revision
+new/reply/reply-all/reply-list/forward kind
+structured document
+#+end_example
+
+Identity 切换是一次 semantic Compose edit，不能只改变 presentation。发布时重新验证 Identity仍然
+可用且属于 Route Account；Workspace、默认规则或 view scope 的变化不能偷偷改写已有 binding。
+
+=ReplyPlan= 后续保存父 Email、threading/list/delivery evidence 和 =$answered= follow-up 所需的最小
+证据。实际 To/Cc/Bcc/Subject 等可编辑值只存在于 ComposeDocument，不复制第二只 recipient plan。
+
+普通 server Draft通过 =Email/set create= 发布：structured recipient/header、bodyStructure/bodyValues 和
+resource blobId由 pure compiler产生。确认新 remote Email后才推进 published revision；旧 remote Draft
+清理由独立 durable intent完成。
+
+* SubmissionAttempt
+
+=SubmissionAttempt= 固定已确认的 remote Draft Email、published Compose revision、Identity、Route、
+explicit envelope 和 baseline evidence。
+它至少区分 =ready=、=publishing-email=、=submitting=、=accepted=、=rejected= 和 =unknown-outcome=。
+
+=accepted= 记录 JMAP 服务器已经创建 EmailSubmission。
+每个收件人的最终 delivery 另记为 =queued=、=yes=、=no= 或 =unknown=。
+
+若 create response 丢失，Chidu 必须根据发送前保存的 submission baseline 查询同一 Email。
+只有一个新增对象同时匹配 Identity 和 envelope 时才能认领，零个或多个候选都保持 unknown outcome。
+
+=onSuccessUpdateEmail= 产生 Draft 或 Sent filing evidence；
+Canonical Email cache 通过后续 =Email/changes= 闭合。

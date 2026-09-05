@@ -1,0 +1,125 @@
+#+title: Chidu 建设顺序与验收
+#+language: zh-CN
+
+* 原则
+
+1. 每条后端切片尽快形成可操作 UI，不长期积累不可见 infrastructure；
+2. JMAP correctness 由 strict adapter、closed Store、model 和真实 smoke 共同约束；
+3. 只在测量证明需要时增加 worker、native helper 或替代 backend；
+4. 新抽象必须同时删除被替代路径，不保留并行实现；
+5. 测试覆盖 observable contract 和高风险排序，不按字段复制低价值案例。
+
+* 当前顺序
+
+** Live canonical Email sync
+
+Bootstrap、coverage-aware hydration、state-matched catch-up、atomic generation activation 和 steady-state
+live reducer 已闭合。EventSource 与 polling wake 共用 active generation 的 bounded
+=Email/changes + Email/get= round；旧 Summary 和通知双状态机均已删除。
+
+已满足：
+
+- Created、updated、destroyed 和 notFound 原子更新 active generation；
+- keyword、Mailbox membership 和 preview 变化由本地 Summary 直接读取；
+- 任意 network 或 Store transition 前后都从 durable checkpoint 继续；
+- =cannotCalculateChanges= 保留旧 active generation并建立新的 building generation；
+- 多个 wake 合并，Account lane 不并发执行两轮 canonical changes；
+- Notification 在所有 changes page 闭合后读取最终 canonical state。
+
+** Compose、Draft 与 Submission
+
+Compose 基础已按 JMAP model重写：
+
+- =chidu-compose-mode= 是专用 structured editor，不以 Message/MML text作为 canonical source；
+- Appkit只提供 generation、capture 和 view-local effect owner，不拥有 autosave或 Draft outcome；
+- =ComposeWorkspace= 是 local checkout/recovery journal，不冒充服务端 Draft；
+- SQLite用 revision CAS保存 =ComposeDocument=；checkpoint显式触发，不建立 autosave reducer；
+- pure compiler将 plain-text Document编译为 Drafts + =$draft/$seen= 的 =Email/set= create object；
+- explicit Save Draft 已有 durable intent、known rejection、response-loss reconciliation 和 non-blocking predecessor cleanup；
+- To/Cc/Bcc/Reply-To 直接使用 RFC 9610 AddressBook/get + ContactCard/query/get，不维护第二套地址簿 fallback；
+- submission尚未实现时，不暴露假的 Send或SMTP fallback。
+
+** Contacts browser
+
+Read-only JMAP Contacts vertical slice已闭合：
+
+- =M-x chidu-contacts= 打开 Contacts-capable Endpoint的 AddressBook directory；
+- subscribed books默认展开，未订阅 books只在用户显式管理时显示，=myRights= 决定可读性；
+- Contact list使用 =inAddressBook + optional text= 的 bounded server query和result reference get；
+- next page使用stable anchor，并要求queryState、position和remote id coverage连续；
+- targeted detail读取 selected JSContact fields；Compose动作使用preferred email；
+- 不建立 SQLite Contacts mirror，不实现隐式本地排序或地址簿 fallback。
+
+ContactCard/AddressBook CRUD在 Draft/Submission主线之后单独实现；编辑必须以immutable server Card为patch base，
+不能用简化read model整只覆盖未知JSContact属性。
+
+Canonical Drafts view、remote checkout/discard、stable resources和external attachment materialization已经
+按shared editable semantic normal form闭合。下一步按顺序实现ReplyPlan/strict recipient parser、
+submission-time IdentityBinding和EmailSubmission。
+
+验收条件：
+
+- Drafts view以 canonical JMAP Email为事实来源，local workspace只作为 overlay；
+- 每次 publish generation在新 remote Email确认后才推进 published revision；
+- Response loss和 predecessor cleanup partial success有 durable evidence；
+- SubmissionAttempt只接受 current confirmed remote Draft、resolved Identity和Route；
+- accepted、rejected和unknown outcome可区分，unknown不会普通重发；
+- Sent filing、Draft cleanup、=$answered= follow-up和最终 delivery分别核对。
+
+** Search query repair
+
+用 =Email/queryChanges= 增量维护已经 materialize 的 Search ordered window；Summary 直接派生自 active
+generation，不建立 query lease。
+
+验收条件：
+
+- Exact filter、sort、collapseThreads 和 queryState 构成 Search identity；
+- Removed、added index 和 sparse gap 按 RFC errata 处理；
+- 任何 mismatch 都退回 bounded Search rebuild；
+- Stale lease 先执行 bounded refresh，再恢复 append。
+
+** Mailbox 与 Identity 管理
+
+增加独立 =Mailbox/changes=、=Identity/changes= 和相应管理 UI。
+Mailbox create、rename、delete、subscription 与 Identity edit 只能在 capability 和 rights 允许时出现。
+
+** 后续切片
+
+- Restore、move out of Trash 和 permanent =Email/destroy=；
+- Keyword、flag、spam、mute 和 undo policy；
+- Raw RFC bytes、upload/import、Blob copy 和可选离线 materialization；
+- Unified Inbox、多 Endpoint 隔离和跨 Account operation 汇总；
+- 可选本地 FTS；
+- 邮件列表和补丁增强；
+- VacationResponse 等低频 capability。
+
+* 每条切片的完成标准
+
+1. Wire input 有 strict shape、coverage 和 resource-limit validation；
+2. 用户意图在网络访问前进入 durable Store；
+3. Transition 有 restart、late result、partial result 和 response-loss 语义；
+4. UI 读取已提交状态，并明确显示 unavailable、pending 和 stale；
+5. Appkit view 关闭后释放 effect，late result 由 operation token 拒绝；
+6. 自动测试覆盖关键状态排序，真实 JMAP smoke 覆盖协议路径；
+7. Implementation status 只在能力审计中更新。
+
+* 项目级验证
+
+- =eask run script test=；
+- =tools/jmap-storage-audit/*.py= model；
+- Fresh/reopen/restart SQLite suite；
+- Read-only 或可逆 live smoke；
+- 大 Account 的 memory、disk、transaction 和 event-loop tail；
+- Durable transition 前后的 crash injection。
+
+* Completed: stable Compose resources and attachment-backed Drafts
+
+- [X] Copy selected attachment bytes into a private SHA-256 resource store.
+- [X] Keep attachment metadata and ordering in the structured ComposeDocument.
+- [X] Checkpoint the exact dirty revision before any network upload.
+- [X] Upload unresolved resources through JMAP =uploadUrl=.
+- [X] Persist returned Blob ids and resume publication after restart.
+- [X] Compile attachment-backed Drafts as =multipart/mixed=.
+- [X] Verify the reversible path against Stalwart and leave no remote residue.
+- [X] Materialize attachment-bearing Drafts created by other clients.
+- [X] Validate the shared editable semantic normal form against reversible Stalwart wire.

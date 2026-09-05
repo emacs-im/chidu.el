@@ -1,0 +1,185 @@
+#+title: JMAP Contacts 浏览与管理边界
+#+language: zh-CN
+
+* 产品模型
+
+Chidu 将 RFC 9610 Contacts 作为独立 JMAP 数据类型，而不是 Mailbox 的附属信息，也不把最近邮件地址伪装成通讯录。
+
+#+begin_example
+Endpoint
+  └── primary Contacts Account
+        ├── AddressBook
+        │     └── ContactCard
+        └── AddressBook
+              └── ContactCard
+#+end_example
+
+一张 ContactCard 可以同时属于多只 AddressBook；=addressBookIds= 是集合，不是单父目录。ContactCard 是
+JSContact Card，并可表示 individual、organization、location、device、application 或 group。
+
+当前切片是 read-only browser：
+
+#+begin_example
+AddressBook/get
+  → AddressBook directory
+
+ContactCard/query(inAddressBook, optional text, bounded page)
+  → result reference
+  → ContactCard/get(summary properties)
+  → Contact list
+
+ContactCard/get(detail properties)
+  → Contact detail
+#+end_example
+
+不建立 SQLite Contacts mirror。每只页面拥有 exact remote query、queryState、anchor 和 cancelable request；普通 render
+path不访问网络。
+
+* AddressBook directory
+
+=M-x chidu-contacts= 打开当前或选择的 Contacts-capable Endpoint。Root 和 Root Transient 也提供 Address Books入口。
+
+Directory 按服务端 =sortOrder= 排序，同序时按本地 locale 的名称顺序排序：
+
+#+begin_example
+Subscribed Address Books
+  Personal                 default · subscribed · writable
+  Team                     subscribed · read-only
+
+Other Address Books
+  Shared Archive           read-only
+#+end_example
+
+Subscribed AddressBooks默认展开；未订阅 AddressBooks只在用户显式打开管理页时显示。每行保留：
+
+- =id=、=name=、=description=、=sortOrder=；
+- =isDefault=、=isSubscribed=；
+- =myRights.mayRead/mayWrite/mayShare/mayDelete=。
+
+只有 =mayRead= 的 AddressBook可以打开。其他 rights只用于状态展示；create/edit/share/delete尚未暴露。
+
+* Contact list
+
+打开 AddressBook 后，Chidu执行 bounded、server-backed query：
+
+#+begin_example
+ContactCard/query
+  filter.inAddressBook = selected AddressBook
+  filter.text          = optional search text
+  sort                 = updated descending
+  limit                = chidu-contacts-page-size
+#+end_example
+
+Stalwart当前支持 RFC 9610要求的 =created/updated= sort，但不支持 SHOULD-level name comparator，因此第一版使用
+=updated= descending，不在客户端取全量数据后重新排序。
+
+下一页使用上一页最后一只 query id作为 anchor，并要求：
+
+- 新 page的 =queryState= 与已加载 page一致；
+- 新 page的 =position= 正好接续已加载 query ids；
+- 分页进度按 =ContactCard/query.ids= 推进，而不是按 =ContactCard/get.list= 行数推进；
+- query/get之间消失并落入 =notFound= 的 Card不会令下一页回退或重复；
+- page之间没有 remote id重叠；
+- =anchorNotFound= 明确要求 refresh，不猜测新位置。
+
+=ContactCard/get= 的返回顺序不可信；adapter按 =ContactCard/query.ids= 恢复 server query order，并要求每只 id由
+=list= 或 =notFound= 精确结算一次。
+
+列表只请求摘要字段：
+
+#+begin_example
+id uid kind name emails phones organizations titles updated addressBookIds
+#+end_example
+
+列表行显示 display name、preferred email、preferred phone和首个 organization。Group保留为独立 Card，不错误展开成一只
+email address。
+
+* Contact detail
+
+=RET= 对选中 ContactCard执行 targeted =ContactCard/get=，按需读取：
+
+- name、kind、uid；
+- emails、phones；
+- organizations、titles；
+- addresses、onlineServices；
+- notes、members；
+- AddressBook memberships；
+- created、updated。
+
+详情页是选定字段的 read projection，不是完整 editable JSContact副本。未来编辑必须保留原始 immutable Card作为 patch base，
+只生成用户明确修改字段的 JMAP PatchObject，不能用简化 read model整只覆盖服务器 Card。
+
+* Compose integration
+
+Contact list和详情页的 Compose动作使用 preferred email建立新的 structured ComposeDocument。优先使用相同 Endpoint中
+remote Account id与 primary Contacts Account相同的 sendable Mail Account；否则在该 Endpoint的 sendable Accounts中选择。
+
+Compose中的 =M-TAB= 继续直接查询 JMAP Contacts：
+
+- 同一 request读取 subscribed/readable AddressBooks；
+- =ContactCard/query= 使用 =text= filter；
+- result reference驱动 =ContactCard/get=；
+- JSContact =email.pref= 决定同一卡片地址顺序；
+- 不维护最近邮件地址 fallback。
+
+* 交互
+
+AddressBook directory：
+
+| key | action |
+|-----+--------|
+| =RET= | 打开 AddressBook |
+| =TAB= | 折叠或展开 section |
+| =g= | 刷新 AddressBooks |
+| =?= | 打开 Transient |
+
+Contact list：
+
+| key | action |
+|-----+--------|
+| =RET= | 打开 Contact detail |
+| =/= | 服务器端搜索当前 AddressBook |
+| =g= | 刷新 exact query |
+| =+= | 加载下一页 |
+| =c= | 给 preferred email写邮件 |
+| =?= | 打开 Transient |
+
+Contact detail：
+
+| key | action |
+|-----+--------|
+| =g= | 刷新 ContactCard |
+| =c= | 写邮件 |
+| =?= | 打开 Transient |
+
+Evil bindings使用相同领域命令，并保留原生 navigation/operator语义。
+
+* 模块边界
+
+| file | responsibility |
+|------+----------------|
+| =chidu-contact-model.el= | 小型 AddressBook、ContactCard和page read models |
+| =chidu-jscontact.el= | selected JSContact field decoder |
+| =chidu-jmap-contact.el= | strict RFC 9610 request/response adapter |
+| =chidu-contact.el= | capability、credential和cancelable runtime workflow |
+| =chidu-view-request.el= | Appkit view与runtime operation的owner/cancel边界 |
+| =chidu-address-books.el= | AddressBook directory |
+| =chidu-contacts.el= | bounded ContactCard list |
+| =chidu-contact-view.el= | targeted read-only detail |
+
+JMAP adapters不依赖 SQLite、Store operation或UI。Views不保存第二份通讯录状态。
+
+* 后续管理切片
+
+Read-only browser稳定后，再分别实现：
+
+1. ContactCard create/edit/addressBookIds/destroy；
+2. AddressBook create/edit/subscription/default；
+3. AddressBook delete的两种显式语义；
+4. group member UID resolution；
+5. photo Blob upload和Media；
+6. sharing/principal UI。
+
+Mutation必须先进入 durable intent，再执行 =ContactCard/set= 或 =AddressBook/set=；=stateMismatch= 读取新 base并要求用户处理
+冲突，不盲目覆盖。AddressBook delete必须明确区分保留 contents与 =onDestroyRemoveContents=true=，不能共用一个含糊的
+Delete命令。

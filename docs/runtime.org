@@ -1,0 +1,109 @@
+#+title: Chidu 运行时
+#+language: zh-CN
+
+* 定位
+
+=chidu-runtime.el= 拥有 Store capability、operation registry、Account runtime token 和 Store timing metrics。
+Mailbox、Email 和 UI workflow 分别由对应的 sync 与 view module 拥有。
+Durable truth 始终在 Store，callback closure 只保存当前 bounded effect 所需的数据。
+
+* Runtime state
+
+#+begin_example
+ChiduRuntime
+  store
+  operations: operation-id -> cancel function
+  accounts: account-id -> AccountRuntime
+  store timing metrics
+
+AccountRuntime
+  phase
+  generation
+  operation-id
+  cancel function
+#+end_example
+
+Operation 开始时注册，完成或取消时删除。
+Callback 只有在 operation id、Account generation 和 Store expected revision 都仍匹配时，才能继续提交结果。
+
+Account-wide bootstrap 同时只接受一条推进 type state 的 workflow。
+读取正文、下载附件、刷新 Conversation 和普通 mutation 使用独立 operation，不占用 bootstrap lane。
+
+* Cancellation
+
+取消只读 effect 会终止请求并丢弃迟到结果。
+已经 dispatch 的 mutation 由 durable intent 持续拥有，重启或重连后继续 reconciliation。
+
+Buffer 关闭会释放该 view 的 interest。
+共享 attachment transfer 在最后一个 caller 释放 interest 后终止底层请求。
+
+* Store execution
+
+Store operation 在交互式 Emacs 中执行，并记录 call count、total duration、max duration 和 last duration。
+超过 =chidu-store-slow-operation-seconds= 的调用产生 warning。
+
+单次 Store transaction 保持有界。
+大型 bootstrap 把 wire page 拆成较小 Store chunk，并在 chunk 之间让出 event loop；
+benchmark 超出响应性预算时，同一 closed API 可以移到 worker。
+
+* HTTP 与 JMAP effect
+
+普通 Session、JMAP JSON request 和 bounded EventSource long-poll 都经过 =chidu-jmap-http.el=，由 =plz= 启动 curl。
+
+当前 HTTP policy 包括：
+
+- redirect 只允许 HTTPS；
+- JMAP POST 在 301、302 和 303 后仍保持 POST；
+- Redirect Authorization 只跟随 same-origin HTTPS；
+- JSON、EventSource 和 Blob 下载禁用 content decoding，使用 =Accept-Encoding: identity=；
+- curl 8.4.0 =--max-filesize= 提供 transfer-time hard bound，完成后再核对实际 byte size；
+- wrapper 在请求建立后移除 =plz= 保存的 Authorization 和 request-body 调试副本。
+
+支持的 curl 最低版本为 8.4.0；每次配置的新 curl executable 在第一个 HTTP effect 前通过 =curl --version= 门禁。
+普通 JSON result 仍必须有 response、object、string 和 aggregate byte limit，大型 Blob 必须使用 file 或 stream sink。
+
+* Attachment transfer
+
+Attachment URL 由已认证 Session 的 =downloadUrl= 展开，并验证 HTTPS 和 direct authority。
+Appkit 负责 shared transfer、caller cancellation 和 private staging；
+Chidu 验证 JMAP size 后原子发布并设置 private mode。
+
+Authorization mutable string 在 success、error 或 cancel settlement 后清理。
+File 或 stream sink 直接承载 binary bytes。
+
+* Credential
+
+=chidu-endpoints= 是连接目标的唯一用户配置。
+Runtime 只在实际 effect 需要认证时，按同一 =host + port + user= 从 =auth-source= 取得 secret copy。
+
+Workflow 持有 secret copy 到 settlement，并在随后 best-effort clear；
+Store、argv 和日志只保存非 secret metadata。
+更强的 secret isolation 由独立 credential 或 network helper 提供。
+
+* Lifecycle
+
+启动顺序：
+
+1. 打开 Store；
+2. 读取 =chidu-endpoints=；
+3. 复用或建立对应的本地 Endpoint projection；
+4. 立即显示本地 Account、Mailbox；有 active generation 时 Summary 可直接读取 canonical rows；
+5. 异步刷新 Session，并在需要时读取 secret。
+
+本地 Store 和已缓存界面先行启动，curl 或网络 failure 只影响对应 effect。
+没有 active Email generation 时，Summary 返回 =email-index-unavailable=。启动、打开 Mailbox 和普通
+Mailbox sync 都不隐式建立 index；用户从 Account Transient 明确选择 =Build Email index=，并可取消。
+
+关闭顺序：
+
+1. 将 runtime 标记为 closed；
+2. 取消当前只读 effects；
+3. 清理 operation 和 Account ephemeral state；
+4. 关闭 Store。
+
+Crash recovery 从 durable checkpoint 和 intent journal 重建 execution。
+
+=chidu-live.el= 为每个 connected Endpoint 持有一只 EventSource request、低频 sweep timer 和
+per-Account pending wake。Wake 可以合并或丢失，因为下一次 polling 仍从 durable Email state 继续；
+同一 Account 的 live Email sync 与显式 index、Mailbox sync 共用 runtime admission lane。
+=chidu-notify.el= 只消费已提交 transition 返回的 bounded candidate rows，不参与恢复。

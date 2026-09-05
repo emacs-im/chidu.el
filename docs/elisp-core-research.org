@@ -1,0 +1,115 @@
+#+title: Chidu Elisp Core 可行性研究
+#+language: zh-CN
+#+date: 2026-08-24
+
+* 研究问题
+
+本研究比较交互式 Emacs、headless Emacs Core、窄 native helper 和完整 Rust Core。
+研究最初假设 UI 与 durable runtime 需要进程隔离；
+检查对象包括 SQLite、文件 owner、curl、RPC、secret 和 cancellation。
+
+研究对应当时的 Emacs master、curl 8.21.0、Futur 2.0 和已删除的 Core prototype。
+版本相关结论只能作为历史证据，不能代替当前源码或 benchmark。
+
+* 当前决策
+
+2026-08-25 起，Chidu v1 采用交互式 Emacs 内的 in-process architecture。
+持久 headless Emacs Core、内部 RPC 和完整 Rust Core 已从目标架构移除。
+
+后续实测表明，bounded SQLite transaction 和 chunked workflow 可以满足当前响应性要求，而主要耗时来自独立网络请求。
+进程隔离的部署、RSS、RPC 和跨边界 DTO 成本没有得到产品需求或 benchmark 的证明。
+
+当前决策不否认窄 worker 或 native helper 的价值。
+只有具体 workload 证明 UI stall，或 threat model 要求 stock Emacs 无法提供的 OS 原语时，才重新引入对应边界。
+
+* 保留的技术结论
+
+** Emacs thread 与 SQLite
+
+Elisp thread 共享 heap，并受 cooperative scheduling 和全局 Lisp execution 约束。
+把同步 =sqlite-select= 放进 =make-thread= 不能保证交互线程持续响应，也不能形成真正的 SQLite owner isolation。
+
+Dynamic module 的 =emacs_env= 绑定调用它的 Lisp thread。
+Native worker thread 通过 native-owned queue 和 copy boundary 返回结果；
+=emacs_env= 相关操作保留在对应 Lisp thread。
+真正并行的 SQLite 工作使用独立 process、native-owned worker 或窄 Store helper。
+
+** File owner 与 strict open
+
+Stock Emacs =sqlite-open= 不暴露 =SQLITE_OPEN_NOFOLLOW=。
+先检查 symlink、owner 或 mode 再按 path 打开，无法抵抗 same-UID adversarial path replacement。
+
+Emacs visited-file lock 解决编辑冲突，不等同于 Store lifetime owner lock。
+当前 SQLite owner transaction 可以阻止第二只正常 Chidu runtime，但不能提供 strict no-follow open guarantee。
+
+若 threat model 要求该保证，最小边界是增加 Emacs primitive、native Store capsule 或外部 helper。
+
+** HTTP、EventSource 与 Blob
+
+=plz= 配合 curl 足以承担 bounded JMAP JSON request、redirect policy、EventSource byte stream 和大型 Blob file sink。
+普通 =url-retrieve= 以 response buffer 为中心，不适合要求大型 payload 不进入 Emacs heap 的路径。
+
+Curl 只提供机械 transport。
+Chidu 定义 HTTPS-only redirect、credential origin 和 response size；
+SSE parser、timeout、cancellation、temp verification 和 atomic publish 也属于 adapter policy。
+
+** Worker 选择
+
+=Futur= 的 subprocess path适合可序列化、纯计算、可丢弃的 background job。
+它不是 durable owner runtime，也不自动提供 Store transaction、operation journal 或 Account lifecycle。
+
+一次性 =emacs-async= 适合孤立 batch job，不适合频繁请求或持久 owner。
+Persistent headless Emacs 只有在需要完整 heap 和 event-loop isolation 时才值得承担额外 process 和 RPC 成本。
+
+** RPC 与 backpressure
+
+Strict local RPC 需要 header cap、bounded input/output byte queue 和 slow-client disconnect。
+Framing、queue ownership、cancellation 和 backpressure policy 必须显式设计。
+
+** Secret
+
+普通 Emacs mail client 可以从 =auth-source= 取得 secret，避免 argv、Store 和日志，并在请求结束后 best-effort clear。
+这不能保证 secret 从未进入 Lisp heap，也不能对任意第三方 Elisp 提供强隔离。
+
+交互式 Lisp heap 之外的 secret isolation 需要 credential 或 network helper；
+helper 直接访问 Secret Service、GPG 或其他 provider。
+完整 Rust Core 也不能修复“Emacs 先读取 secret 再转交”的路径。
+
+* 被放弃的方案
+
+早期推荐曾是 =interactive Emacs → local RPC → headless Emacs Core → Store capsule=。
+它解决 UI heap 隔离和 owner lifecycle，但同时引入额外 RSS、部署组件、RPC parser、DTO、backpressure 和 teardown。
+
+当前没有 evidence 证明这些成本优于 bounded in-process Store。
+因此该方案只保留为研究过的替代路径，不是待完成 roadmap，也没有兼容层或 runtime fallback。
+
+* 重新评估条件
+
+满足任一条件时，可以重新做窄、可证伪的 spike：
+
+- 可复现 workload 让 Store、JSON、MIME 或 GC 超过 UI latency budget；
+- 多 Emacs 必须同时共享一只 Store；
+- 外部 CLI 或 remote frontend 需要稳定 process protocol；
+- Same-UID path adversary进入正式 threat model；
+- Secret 必须完全离开交互式 Lisp heap；
+- 大型 Blob 或 CPU workflow 无法在现有 bounded adapter 中闭合。
+
+Spike 必须测量 latency、memory、RSS、startup、cancellation 和 recovery，并只迁移被证明需要隔离的边界。
+
+* Sources
+
+- GNU Emacs SQLite binding: https://github.com/emacs-mirror/emacs/blob/80383d8e57e1c2899dbcaccd42ca34ddd28ca3fc/src/sqlite.c
+- GNU Emacs Lisp threads: https://github.com/emacs-mirror/emacs/blob/80383d8e57e1c2899dbcaccd42ca34ddd28ca3fc/doc/lispref/threads.texi
+- GNU Emacs dynamic modules: https://github.com/emacs-mirror/emacs/blob/80383d8e57e1c2899dbcaccd42ca34ddd28ca3fc/doc/lispref/internals.texi
+- GNU Emacs file I/O: https://github.com/emacs-mirror/emacs/blob/80383d8e57e1c2899dbcaccd42ca34ddd28ca3fc/src/fileio.c
+- GNU Emacs file locking: https://github.com/emacs-mirror/emacs/blob/80383d8e57e1c2899dbcaccd42ca34ddd28ca3fc/src/filelock.c
+- GNU Emacs process I/O: https://github.com/emacs-mirror/emacs/blob/80383d8e57e1c2899dbcaccd42ca34ddd28ca3fc/src/process.c
+- GNU Emacs JSON-RPC: https://github.com/emacs-mirror/emacs/blob/80383d8e57e1c2899dbcaccd42ca34ddd28ca3fc/lisp/jsonrpc.el
+- GNU Emacs auth-source: https://github.com/emacs-mirror/emacs/blob/80383d8e57e1c2899dbcaccd42ca34ddd28ca3fc/lisp/auth-source.el
+- SQLite open flags: https://www.sqlite.org/c3ref/c_open_autoproxy.html
+- SQLite locking: https://www.sqlite.org/lockingv3.html
+- curl: https://curl.se/docs/manpage.html
+- JMAP Core EventSource: https://www.rfc-editor.org/rfc/rfc8620.html
+- WHATWG EventSource: https://html.spec.whatwg.org/multipage/server-sent-events.html
+- plz.el: https://github.com/alphapapa/plz.el
+- GNU ELPA Futur: https://elpa.gnu.org/packages/futur.html

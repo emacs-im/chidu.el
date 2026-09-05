@@ -1,0 +1,84 @@
+#+title: Chidu · 尺牍
+#+language: zh-CN
+
+Chidu 是一个本地优先、JMAP-first、查询驱动的 Emacs 邮件客户端。
+当前版本直接运行在交互式 Emacs 中，并使用 SQLite 保存本地状态、使用 =plz= 和 curl 访问 JMAP。
+
+* 要求
+
+- Emacs 29.1 或更新版本；
+- curl 8.4.0 或更新版本；
+- Appkit 0.2.18、plz 0.9.1 和 Transient 0.7.0。
+
+* 配置
+
+=chidu-endpoints= 决定 Chidu 连接哪些服务，=auth-source= 只提供对应的 secret。
+
+#+begin_src emacs-lisp
+(setq chidu-endpoints
+      '((:host "mail.example.com"
+         :user "me@example.com")))
+#+end_src
+
+对应的 =~/.authinfo.gpg= 可以写成：
+
+#+begin_example
+machine mail.example.com login me@example.com port 443 password <secret>
+#+end_example
+
+=:port= 默认为 443，=:authentication= 默认为 =basic=，也可以设为 =bearer=。
+Chidu 根据 =:host= 和 =:port= 访问 =https://HOST/.well-known/jmap=；
+每个 endpoint 以同一组 =host + port + user= 查询 =auth-source=。
+只有 =chidu-endpoints= 中的配置会进入启动列表。
+
+* 使用
+
+- =M-x chidu= 打开 Endpoint、Account 和 Mailbox 目录；
+- =M-x chidu-search-mail= 搜索邮件；
+- =M-x chidu-contacts= 浏览 JMAP AddressBooks 和 ContactCards；
+- =M-x chidu-compose= 建立结构化 Compose workspace；
+- =M-x chidu-open-compose-workspace= 恢复本地 Compose workspace；
+- Compose 中 =M-TAB= 查询 JMAP ContactCards，=C-x C-s= 保存当前 revision 为服务器 Draft；
+- =M-x chidu-sync-account= 只刷新所选 Account 的 Mailbox snapshot；
+- =M-x chidu-index-account= 显式建立或追平 canonical Email index；首次运行可能遍历完整 Account；
+- =M-x chidu-refresh= 重新读取配置并刷新 Session；
+- =M-x chidu-restart= 重启 Chidu；
+- =M-x chidu-stop= 关闭 Chidu。
+
+界面按键和交互语义见 [[file:docs/ui.org][界面指南]]；
+当前能力和未完成部分见 [[file:docs/jmap-capability-audit.org][JMAP 能力审计]]。
+
+Mailbox Summary 只读取 active Email generation，不保留第二套 Summary row cache。
+没有 active generation 时会明确提示建立 Email index；打开 Mailbox、刷新 Summary 或 =g s= 都不会
+暗中启动全量索引。
+
+* 文档
+
+面向使用者：
+
+- [[file:docs/vision.org][产品定义]]；
+- [[file:docs/mail-client.org][目标邮件客户端基线]]；
+- [[file:docs/ui.org][界面指南]]；
+- [[file:docs/contacts.org][JMAP Contacts 浏览与管理边界]]。
+
+面向实现者：
+
+- [[file:docs/architecture.org][架构]]；
+- [[file:docs/domain.org][领域模型]]；
+- [[file:docs/identity.org][身份与发送模型]]；
+- [[file:docs/compose.org][Compose、Draft 与 Submission]]；
+- [[file:docs/storage.org][存储模型]]；
+- [[file:docs/runtime.org][运行时]]；
+- [[file:docs/sync.org][JMAP 同步]]。
+
+项目维护：
+
+- [[file:docs/jmap-capability-audit.org][JMAP 能力审计]]；
+- [[file:docs/roadmap.org][建设顺序与验收]]；
+- [[file:docs/contributing.org][贡献指南]]。
+
+历史决策记录用于解释已放弃的设计：
+
+- [[file:docs/jmap-storage-audit.org][JMAP 存储审计]]；
+- [[file:docs/elisp-core-research.org][Elisp Core 研究]]；
+- [[file:docs/rust-core-research.org][Rust Core 研究]]。

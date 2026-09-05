@@ -1,0 +1,67 @@
+#+title: Chidu 架构
+#+language: zh-CN
+
+* 结论
+
+Chidu v1 的领域状态、runtime、Store 和 UI 都运行在交互式 Emacs 中。
+窄 worker 或 native helper 只用于 benchmark 证明的阻塞工作或明确需要的 OS 安全原语。
+
+#+begin_example
+interactive Emacs
+  └── Chidu
+       ├── domain records and reducers
+       ├── Account workflows
+       ├── closed Store API ──> in-process SQLite
+       ├── canonical local views and query materializations
+       ├── Appkit UI
+       └── asynchronous effects ──> plz / curl ──> JMAP
+#+end_example
+
+* 事实归属
+
+| 组件 | 拥有的事实或职责 |
+|------+------------------|
+| JMAP adapter | 验证 wire response，并产生 typed observation |
+| Domain reducer | 根据 observation 和 durable state 决定 transition |
+| Store | 保存 identity、checkpoint、generation、intent 和 materialization |
+| Runtime | 管理 lifecycle、cancellation、late-result fence 和 effect |
+| View/materialization | Summary 直接派生自 active generation；Search、Conversation 等按需 materialize |
+| UI | 管理 buffer、selection、focus 和其他 view-local state |
+| Appkit Compose primitive | 只管理 semantic generation、immutable capture 和 view-local effect owner |
+
+网络结果必须先通过 closed Store transition 发布，之后才能刷新界面。
+=chidu-live.el= 只持有 ephemeral wake、timer 和 operation token；Email state 与 generation owner
+始终在 Store。=chidu-notify.el= 不持有 checkpoint，进程在 commit 后退出最多只会丢失一次桌面
+presentation，不会丢失 canonical Email 状态。
+
+* 源码边界
+
+| 模块 | 职责 |
+|------+------|
+| =chidu.el= | package lifecycle 和顶层用户命令 |
+| =chidu-runtime.el= | operation registry、Account phase 和 Store timing |
+| =chidu-store.el= | closed Store protocol 和 typed result |
+| =chidu-store-sqlite*.el= | SQLite backend 的 schema、transaction 和领域映射 |
+| =chidu-jmap-*.el= | Session、HTTP、JMAP request 和 strict decode |
+| =chidu-*-sync.el= | bounded workflow 和 Store transition orchestration |
+| =chidu-live.el= | EventSource/polling wake、Account 串行化和 canonical view reload |
+| =chidu-notify.el= | 最终 canonical row 的通知 eligibility 与 presentation |
+| =chidu-root.el= | Endpoint、Account 和 Mailbox 目录 |
+| =chidu-summary.el= / =chidu-search.el= | canonical Summary view 与 query-bound Search list |
+| =chidu-conversation.el= / =chidu-message.el= | 会话与单封阅读器 |
+| =chidu-compose.el= | structured ComposeDocument editor、workspace checkpoint 和 Identity UI |
+| =chidu-jmap-compose.el= | ComposeDocument 到 JMAP Draft create object 的 pure compiler |
+| =chidu-contact-model.el= / =chidu-jscontact.el= | AddressBook/ContactCard read models与selected JSContact decoder |
+| =chidu-jmap-contact.el= / =chidu-contact.el= | strict RFC 9610 adapter与cancelable Contacts workflows |
+| =chidu-address-books.el= / =chidu-contacts.el= / =chidu-contact-view.el= | AddressBook directory、bounded Contact list与targeted detail |
+| =chidu-view-request.el= | Appkit view与cancelable runtime operation的窄owner边界 |
+| =chidu-jmap-draft.el= / =chidu-draft.el= | strict Draft wire adapter与durable publish/reconcile/cleanup workflow |
+| =chidu-transient.el= / =chidu-evil.el= | 交互适配层 |
+
+SQLite backend 按职责拆分内部文件，=chidu-store-sqlite.el= 保留唯一 exhaustive dispatch。
+交互适配层只解析当前 target 并调用领域命令，mutation 和 Store 状态机仍由领域模块拥有。
+
+Summary 不拥有长期 projection table。=chidu-store-sqlite-generation.el= 直接从 active generation、
+metadata、preview 和 local operation overlay 生成 bounded rows；没有 active generation 时返回明确失败，
+不回退到旧缓存或隐式访问网络。
+

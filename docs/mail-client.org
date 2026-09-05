@@ -1,0 +1,51 @@
+#+title: Chidu 目标邮件客户端基线
+#+language: zh-CN
+
+* 阅读
+
+- 浏览普通收件箱、统一收件箱、Mailbox、Drafts、Sent、Archive、Spam 和 Trash；
+- 阅读纯文本、HTML、multipart MIME、附件、内联图片和原始邮件；
+- 在单封邮件、时间顺序会话、回复树和 focused view 之间导航；
+- 在断网后继续读取已经完整缓存的内容。
+
+* 整理
+
+- 修改 read、flag、mute、Mailbox 和 keyword 状态；
+- 执行 archive、move、copy、trash、restore 和 spam 操作；
+- 通过 marks、region 和 bulk operation 批量处理，并明确显示操作结果；
+- 只在服务器能力和当前 rights 允许时提供命令。
+
+* 撰写与发送
+
+- 支持 new、reply、reply-all、reply-list、forward 和独立 Compose buffer；
+- 支持多个 Identity、明确的 Route、收件人计划和发送前检查；
+- 支持本地恢复 journal、服务端 Draft 同步、附件、内联资源、签名、PGP 和 S/MIME；
+- 持久化 SubmissionAttempt，并区分 accepted、rejected、partial 和 unknown outcome；
+- 分别核对服务端 Draft 清理、Sent filing 和最终投递状态。
+
+* 查找
+
+- 按正文、header、Account、Mailbox、日期、地址、状态、附件、邮件列表和补丁过滤；
+- 明确区分 cached-only 查询和覆盖完整账号的 JMAP search；
+- 保存查询、历史参与者和联系人补全信息；
+- 让服务端命中按需进入本地 cache，并保留 Mailbox 和 Conversation 上下文。
+
+* 账号与同步
+
+- 配置、禁用和移除 Endpoint，并选择 Session 公布的 Account；
+- 浏览和管理 Mailbox，并显示 capability、rights、同步状态和错误；
+- 独立启动、停止和同步各 Account，并按 Account 路由批量操作；
+- 配置 header、正文、附件和通知策略；
+- 在移除 Account 时明确选择本地数据保留策略。
+
+* 邮件列表与补丁增强
+
+- 按 =List-Id= 浏览活动、未读会话和参与者；
+- 支持 reply-list、private reply、strict reply tree 和缺失祖先；
+- 识别 cover letter、patch order、revision、diffstat 和 review reply；
+- 在 =diff-mode= 或版本控制工作流中打开补丁。
+
+* 最低完成标准
+
+Chidu 必须闭合一个普通 JMAP Account 的同步、阅读、整理、搜索、Draft、发送、离线使用和重启恢复。
+关闭邮件列表与补丁增强后，以上基线仍须成立。

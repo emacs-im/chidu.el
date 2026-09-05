@@ -1,0 +1,326 @@
+#+title: Chidu Compose、Draft 与 Submission
+#+language: zh-CN
+
+* 事实归属
+
+Chidu 不把可编辑邮件等同于 RFC 5322 文本，也不把本地 recovery row 当成邮件账户中的 Draft。
+当前模型是：
+
+#+begin_example
+chidu-compose-mode
+  └── ComposeDocument                 当前结构化编辑值
+       │
+       ├── local checkpoint
+       ▼
+ComposeWorkspace                      本地 checkout / crash recovery journal
+       │
+       └── Save Draft to server
+           ▼
+DraftPublishAttempt                   durable network intent
+           ▼
+JMAP Email in Drafts + $draft         跨客户端共享 Draft revision
+           ▼
+EmailSubmission                       后续发送
+#+end_example
+
+=ComposeWorkspace= 可以离线恢复编辑，但不是 JMAP Draft。只有服务器确认创建的 =$draft= Email 才显示为
+“Draft saved to server”。
+
+* ComposeDocument
+
+当前 plain-text profile 是：
+
+#+begin_example
+ComposeDocument
+  to
+  cc
+  bcc
+  reply_to
+  subject
+  body
+  resource_ids
+#+end_example
+
+这些字段是编辑、checkpoint 和 Draft publication 的 canonical value。Field label 由 overlay 生成，不进入
+buffer source 或 SQLite。=From= 由 JMAP Identity selector 决定，不是一段可以随意伪造的 header text。
+
+Attachment 已经通过 =resource_ids= 引用 structured Compose resource。以后 inline resource、HTML
+alternative、ReplyPlan 和加密策略按真实需求扩展 typed Document；不把它们重新编码成 MML 字符串。
+
+** Editable semantic normal form
+
+Chidu 对 external Draft 的“无损”不是 RFC 5322 raw bytes round-trip，而是一个唯一、可执行的
+editable semantic normal form：
+
+#+begin_example
+JMAP bytes
+  -> strict RemoteDraftObservation
+  -> representability projection
+  -> exact Identity binding
+  -> DraftCheckoutPlan
+  -> Blob materialization + atomic ComposeWorkspace commit
+#+end_example
+
+四层分别由 =chidu-jmap-draft-observation.el=、=chidu-jmap-draft-projection.el=、
+=chidu-draft-semantics.el= 和 =chidu-draft-checkout.el= 拥有。Wire decoder 只判断 JMAP 是否自洽；
+projector 只判断当前 editor/compiler 是否能表达；Identity binder 要求 compiler 实际发出的单一 =From=
+与 remote originator 完全一致；workflow 最后才执行 Blob effect 和 Store transition。
+
+共享的 =chidu-draft-editable-shape= 同时是 checkout projector 的输出契约和 JMAP compiler 的输入契约。
+它只包含 originator、ComposeDocument 字段值和有序 resource semantic metadata，不包含本地 resource id。
+Snapshot 只携带 remote Email/blob evidence 与该 pure shape；Identity binder 成功后才分配本地 resource id、
+生成 ComposeDocument/resource observations并形成 DraftCheckoutPlan。Strict observation独立保留本次
+Email state。Binder 会重新计算normal form，拒绝非canonical内部值。
+
+当前 semantic policy 是：
+
+| 数据 | 策略 |
+|------+------|
+| To/Cc/Bcc/Reply-To/Subject/body | 保留；当前无法区分的空recipient header或缺失Subject明确拒绝 |
+| From | 必须由唯一 available Identity 精确重建；display name 与地址原字符串均参与比较 |
+| Attachment bytes、顺序、name/type/size/charset/disposition/cid/language/location | 保留并核对 |
+| text-body charset representation、MIME token/charset casing、Content-Transfer-Encoding、boundary、partId | 允许规范化 |
+| Date、单一 Message-ID | checkout 时验证；replacement 使用 publication workflow 自己的 Date/per-attempt Message-ID |
+| Sender、多 From、reply headers、额外 Mailbox/keyword、未知 header | 当前明确拒绝 |
+| HTML、nested multipart、正文 language/location/cid/disposition/name | 当前明确拒绝 |
+
+完整 =headers= 提供 closed-world 反证材料；未知或重复的不可表示 header 不会被藏进 opaque map。
+=bodyStructure= 是 MIME 结构和 attachment metadata 的唯一事实源，=textBody=、=htmlBody=、
+=attachments= 与 =bodyValues= 只作为 exact consistency evidence。非法 wire 会成为
+=invalid-jmap-response=；合法但不可表示的 Draft 返回 non-retryable =draft-*-unsupported=；Drafts
+membership 或 =$draft= 竞争则返回独立的 typed race failure。
+
+* 专用 Compose mode
+
+=chidu-compose-mode= 派生自 =text-mode=。当前字段顺序是：
+
+#+begin_example
+From:     <Identity selector>
+To:
+Cc:
+Bcc:
+Reply-To:
+Subject:
+
+<body>
+#+end_example
+
+=TAB= 和 =S-TAB= 在结构化字段间移动；header field 保持单行，粘贴换行会被规范成空格。正文继续是
+普通 Emacs 可编辑文本，保留 region、undo、kill/yank、spell checking 和 Evil operator。
+
+** JMAP-native recipient completion
+
+=To=、=Cc=、=Bcc= 和 =Reply-To= 使用标准 CAPF，但服务器查询由 =M-TAB= 显式触发：
+
+#+begin_example
+Session.primaryAccounts[urn:ietf:params:jmap:contacts]
+  → AddressBook/get(id, isSubscribed, myRights)
+  → ContactCard/query(filter.text, bounded limit)
+  → result reference
+  → ContactCard/get(name, emails, kind, addressBookIds)
+  → JSContact name/email/pref decode
+  → ordinary Emacs completion UI
+#+end_example
+
+空 token 使用 bounded ContactCard window；非空 token 使用 RFC 9610 =text= filter。只有至少属于一只
+=subscribed + mayRead= AddressBook 的 card 才进入补全。ContactCard直接提供补全候选。Group card当前不作为单个邮件收件人展开。JSContact =email.pref= 决定一张 card
+内多个地址的顺序。
+
+网络请求不发生在 render path、每次按键或普通 CAPF collection 中。新的 =M-TAB= 会取消旧查询；结果只有在
+workspace、field 和 token 仍匹配时才安装。Session没有 Contacts capability或查询失败时明确报告错误，不静默维护另一套地址簿
+fallback；其他 Emacs CAPF仍可通过 =:exclusive no= 参与。
+
+=From= 不做地址补全，而使用 Identity selection；=Subject= 当前不补全。ComposeDocument 保留用户输入的
+raw address text。Draft publication可以用 individual raw header property保存尚未完成的地址；
+EmailSubmission 前必须经过严格 parser 并冻结显式 envelope。
+
+* Local checkpoint
+
+=C-c C-l= 将当前 ComposeDocument 写入 =chidu_compose_workspace=。Store 使用：
+
+#+begin_example
+expected_revision
+new_revision
+identity_id
+structured document
+#+end_example
+
+做 CAS。它只意味着 recovery copy 已更新，不意味着邮件服务器已有 Draft。
+
+Chidu 不建立第二只 autosave state machine。何时 checkpoint 是 UI policy；Store contract 只有显式的
+closed transition。关闭 dirty workspace 时，用户明确选择 checkpoint、丢弃未 checkpoint 修改或取消。
+
+* Save Draft to server
+
+=C-x C-s=、=C-c C-s= 和 Compose Transient 的 =s= 执行真正的服务器 Draft 保存：
+
+1. capture 当前 Compose generation、Document 和选中的 Identity；
+2. 从 committed Mailbox snapshot 解析唯一且可写的 =role=drafts= Mailbox；
+3. Store 用 expected revision 接受 Document、Identity 和 durable =DraftPublishAttempt=；
+4. 在 HTTP 前将 attempt 从 =pending= 推进到 =unknown=；
+5. pure compiler 生成 =Email/set create= object；
+6. 精确解码 =created/notCreated=，服务器确认后推进 base remote Email/Blob evidence 与
+   =published_revision=；
+7. 新 remote head 已确认后，单独验证并清理 predecessor。
+
+创建对象使用：
+
+#+begin_example
+mailboxIds = {draftsMailboxId: true}
+keywords   = {$draft: true, $seen: true}
+messageId  = stable per-attempt Message-ID
+from       = selected Identity
+header:To / Cc / Bcc / Reply-To
+subject
+bodyStructure = text/plain
+bodyValues
+#+end_example
+
+Identity 是 publication snapshot的一部分。用户切换 =From= 会推进 Compose generation；保存不能继续使用
+workspace 中较旧的 Identity。
+
+** Response loss reconciliation
+
+=create= response丢失、malformed response 或 =serverPartialFail= 不会直接重发。Attempt保持 =unknown=，
+当前 Save以 unknown outcome结束；下一次 Save或重启恢复这只 workspace时先执行 bounded：
+
+#+begin_example
+Email/query
+  inMailbox = Drafts
+  hasKeyword = $draft
+  header Message-ID = stable per-attempt Message-ID
+  limit = 2
+    → Email/get(id, blobId, messageId, mailboxIds, keywords)
+#+end_example
+
+结果解释为：
+
+- 唯一 exact match：认领为 current remote Draft；
+- 零 match：把 attempt恢复为 =pending=，再发送同一 immutable intent；
+- 多个 match：保持 =unknown=，不猜测哪一只属于本次操作；
+- known SetError：标记 rejected，保留旧 remote head。
+
+Store只允许 =unknown= attempt接受 create settlement，防止 callback或测试绕过 durable uncertainty fence。
+
+** Predecessor cleanup
+
+JMAP Email 内容 immutable，所以保存新 revision 会得到新的 remote Email id。新 head确认后，旧 head成为
+独立的 =cleanup-pending= intent，并同时保留 checkout 时的 predecessor Email/Blob evidence：
+
+#+begin_example
+R1 current
+  → create R2
+  → confirm/adopt R2
+  → durable cleanup(R1 id, R1 blobId)
+  → Email/get(R1: id, blobId, mailboxIds, keywords, state)
+  → validate same blobId, still in Drafts, still has $draft
+  → Email/set(ifInState=state, destroy=[R1])
+#+end_example
+
+=notFound= 是幂等成功。Fingerprint 改变会成为 terminal =remoteConflict=，不发送 destroy，也不阻塞后续
+cleanup。Account Email state 因无关对象变化而产生 =stateMismatch= 时，intent保持
+=cleanup-pending=；下一次 Save/open/restart重新 GET，不在一次交互中争抢全局 state。
+
+Cleanup失败不会回滚 R2，也不会阻塞发布 R3。Active publish attempt只包括 =pending/unknown=；
+cleanup intent独立排队并按 durable order恢复。
+
+本地 “Delete workspace” 只允许从未发布、没有 active attempt、也没有 cleanup evidence的 local-only
+workspace。Remote Draft discard需要独立 reducer，不能只删 SQLite row。
+
+* UI 状态
+
+Compose header line区分：
+
+#+begin_example
+Local changes
+Local changes · previous Draft save outcome unknown
+Recovery copy updated
+Saving Draft to server…
+Draft saved to server
+Draft save outcome unknown
+Draft saved · predecessor cleanup pending
+#+end_example
+
+这些状态不会把 local checkpoint伪装成 server save，也不会把服务器接受 Draft与邮件最终发送混为一谈。
+
+* 尚未闭合
+
+下一步包括：
+
+1. ReplyPlan、strict recipient parser 与 submission-time IdentityBinding；
+2. EmailSubmission outcome reducer、Sent filing、=$answered= follow-up 和 delivery observation；
+3. 只有在扩展 shared semantic normal form、editor 与 compiler 后，才支持 HTML、nested multipart 或更多
+   preserved header/body metadata。
+
+Submission只能引用已确认的 current remote Draft Email，不能在发送时临时创建另一封脱离 Draft lifecycle
+的 Email。
+
+* Stable Compose resources and attachments
+
+A Compose attachment is a structured document value, not an MML tag and not a
+reference to the user's original pathname.
+
+** Local ownership
+
+Import copies exact bytes into the private content-addressed tree below the
+Chidu data root:
+
+#+begin_example
+compose-resources/sha256/aa/bb/<sha256>
+#+end_example
+
+The ComposeDocument retains only an opaque attachment id, SHA-256 digest, byte
+size, display name, media type, and optional remote Blob id.  The resource is
+therefore available after restart, while offline, and after the source file is
+moved or deleted.  Multiple attachment bindings may share the same immutable
+content object while retaining distinct names and document order.
+
+The generated attachment panel is presentation only.  Its text is not part of
+the editable body, undo source, copied message text, or durable body value.
+
+** Draft publication
+
+Saving a dirty document with unresolved attachments performs one ordered
+workflow:
+
+#+begin_example
+checkpoint exact ComposeDocument revision
+  -> verify private resource bytes and digest
+  -> upload each unresolved resource through the JMAP uploadUrl
+  -> durably bind each returned blobId to that document revision
+  -> compile text/plain plus blob-backed parts as multipart/mixed
+  -> run the existing durable Email/set Draft publication reducer
+#+end_example
+
+Blob upload is safe to repeat after response loss because it creates no
+user-visible mail object and the uploaded bytes are immutable.  Email/set keeps
+its separate pending/unknown reconciliation boundary.  A restart after upload
+but before Email/set therefore resumes from durable Blob evidence rather than
+from the user's old filesystem path.
+
+** Remote Draft checkout
+
+A Draft created by another client is checked out through one ordered workflow:
+
+#+begin_example
+fetch one complete bounded Email/get observation
+  -> recursively validate the complete MIME tree and raw headers
+  -> project bodyStructure into the shared editable semantic normal form
+  -> verify all convenience projections against the tree
+  -> bind exact remote From to one compiler-equivalent JMAP Identity
+  -> download each attachment through the Session downloadUrl in wire order
+  -> stream into a private bounded staging file and verify the exact JMAP size
+  -> install the bytes in the SHA-256 content-addressed resource store
+  -> create one ComposeWorkspace only after every resource is materialized
+#+end_example
+
+Each attachment retains the original remote =blobId= as publication evidence and
+gains a local digest as editing evidence.  The structured document keeps the
+original resource ids and order.  A later download failure creates no partial
+workspace; an already installed but unreachable content object may remain as a
+safe immutable CAS orphan and can be collected independently.
+
+Chidu 只 checkout 当前 plain-text editor 能明确表示的 external Draft。单一 Message-ID 会被验证，但
+replacement 作为新的 Email 使用独立 per-attempt Message-ID；多个 Message-ID、reply
+=In-Reply-To/References=、额外 Mailbox membership、额外 keyword、HTML alternative或更丰富 MIME shape
+会在创建 ComposeWorkspace 前明确拒绝。

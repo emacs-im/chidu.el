@@ -1,0 +1,190 @@
+#+title: Chidu JMAP 存储审计
+#+language: zh-CN
+#+date: 2026-08-24
+
+* 决策
+
+Chidu canonical model包含 write-once Email fragments 和 generation-scoped mutable state；
+durable local intent 与 Blob materialization 分别持有本地事实。
+v1 使用 SQLite 保存 metadata、checkpoint、journal 和 projection。
+SQLite transaction 与 constraint 提供 generation activation 和 recovery 所需的原子性。
+
+以下方案被否定：
+
+- 每次 =updated= 都创建完整 =EmailRevision=；
+- 长期保存 base snapshot 与 patch chain；
+- 把 =/changes= 当作 event log；
+- 把 preview、SearchSnippet 或 truncated body 当 canonical property；
+- 只用 remote =accountId= 标识 shared Account cache；
+- 让 SetResponse 的 =newState= 无条件推进 canonical Email checkpoint。
+
+* 证据范围
+
+审计检查 RFC 8620、RFC 8621、RFC 9404、RFC 9670、RFC 9979 和 RFC 8620/8621 errata；
+IANA keyword registry 提供 keyword classification。
+JMAP Object Metadata 与 Conditional Set 在审计日期仍是 Internet-Draft，只用于扩展槽设计。
+
+证据优先级依次为 published RFC、verified errata、reported technical errata、active draft 和服务器实现证据。
+服务器源码或 wire fixture 的结论只适用于对应实现。
+
+* 关键协议结论
+
+** State
+
+JMAP state 标识一个 Account 中一个 data type 的完整 cache，并保持 opaque。
+Partial =Foo/get= 返回的 state 仍覆盖整个 type cache。
+
+=Email/get.state= 可以晚于 durable =Email/changes.newState=。
+客户端保存较新的 object observation，并继续从 changes state 收敛 cache。
+因此“cache at state S”表示从 S 继续 =/changes= 可以收敛当前 cache。
+
+** Viewer namespace
+
+Shared Account 的可见对象、rights 和部分 keyword 或 extension property 依赖 viewer。
+Cache identity 使用 =endpoint principal incarnation + remote accountId=。
+
+Password 或 token rotation 可以保留 principal incarnation。
+Login、credential subject 或显式 account binding 建立新 incarnation 和 remote-state namespace。
+
+RFC 9670 的 Session omission 记录 subscription exposure；
+Account accessibility 只由 capability-specific observation 改变。
+
+** Email property
+
+标准 Email 除 =mailboxIds= 和 =keywords= 外基本不可变；
+partial get 要求本地按 property family 记录 coverage。
+Write-once property 可以单调补全，已有值遇到不同 observation 时产生 anomaly。
+
+Preview 作为 presentation hint 保存。
+Body value materialization key 包含 fetch flags、bodyProperties 和 =maxBodyValueBytes=。
+
+=Email/parse= 保存 Blob-scoped parsed view；
+top-level id、mailboxIds、keywords 和 receivedAt 保持 null。
+
+** Visibility 与 Blob
+
+=/changes.destroyed= 和 =Email/get.notFound= 写入 viewer visibility-loss evidence。
+Projection gate 立即撤销可见性，本地 operation 保留 reconciliation 所需的最小 evidence。
+
+JMAP blobId 保存 remote locator；
+本地 content address 保存 exact bytes。
+
+** Query
+
+Email state、queryState 和 Session state 是三个独立值。
+QueryState 只描述 exact filter、sort 和 collapseThreads 对应的 ordered id set。
+
+Anchored enumeration 只提交 queryState、anchor、position、id uniqueness 和 limit 全部匹配的非空页。
+RFC 8620 reported erratum 6605 规定 empty IDs response 的 position 未定义；
+empty page 因此直接结束枚举。
+
+Query repair 把 =upToId= 作为 optional optimization。
+Sparse prefix repair 处理 removed、added index 和 gap invalidation，validation failure 触发 bounded rebuild。
+
+** Mutation
+
+=Email/set.ifInState= 是 type-wide guard，其他 Email 的变化也能导致 =stateMismatch=。
+Standard path 保存 semantic intent 和 per-target evidence；
+subsequent changes 或 targeted get 负责 cache reconciliation。
+
+SetResponse 按 target 保存 success、rejection、conflict 或 unknown outcome。
+Transport response loss 进入 unknown reconciliation。
+
+Ordinary Mailbox move 使用 per-key PatchObject。
+Move to Trash 使用 RFC 8621 定义的完整 membership replacement。
+
+* Bootstrap 结论
+
+安全 bootstrap 使用以下顺序：
+
+#+begin_example
+Email/get(ids=[]) -> e0
+  -> stable Email/query enumeration
+  -> Email/changes membership catch-up
+  -> coverage-aware current Email/get hydration
+  -> second Email/changes + profile-specific Email/get
+  -> state-matched closure
+  -> atomic generation activation
+#+end_example
+
+第一轮 catch-up 修正 query snapshot 与 =e0= 之间的 membership drift。
+每个 member 随后的 current =Email/get= 以 notFound 删除 query 捕获但 changes 完全省略的短命 object。
+
+第二轮 catch-up 从 hydration baseline 继续 changes。
+Created 使用 required profile，updated-only 使用 mutable profile，get state 超前时只推进到 changes state并继续。
+
+只有 =hasMoreChanges=false= 且所有实际发出的 get state 都等于 =changes.newState= 时，building generation 才能激活。
+UI 在整个过程继续读取旧 active generation。
+
+* Model checks
+
+模型：[[file:../tools/jmap-storage-audit/bootstrap_model.py][bootstrap_model.py]]。
+它穷举两个 id、最多五个事件的 bootstrap interleaving。
+
+#+begin_example
+histories=802
+timelines=146838
+direct_closures=259394
+replay_closures=660910
+result=PASS
+#+end_example
+
+模型：[[file:../tools/jmap-storage-audit/split_get_state_model.py][split_get_state_model.py]]。
+它验证 full 和 mutable 两只 get 的独立 state、direct closure 和 replay closure。
+
+#+begin_example
+histories=802
+deltas=24506
+direct_closures=24506
+replay_closures=93662
+result=PASS
+#+end_example
+
+模型：[[file:../tools/jmap-storage-audit/changes_chunk_model.py][changes_chunk_model.py]]。
+它验证 intermediate state 顺序、跨 id interleaving 和 response grouping。
+
+#+begin_example
+lifecycle_choices=144
+linearizations=356
+response_sequences=1548
+result=PASS
+#+end_example
+
+模型：[[file:../tools/jmap-storage-audit/query_prefix_model.py][query_prefix_model.py]]。
+它验证通过 boundary checks 的 repaired prefix membership。
+
+#+begin_example
+immutable_cases=30720
+immutable_accepted=18816
+mutable_cases=187872
+mutable_accepted=156576
+result=PASS
+#+end_example
+
+这些 model 只证明小状态下的集合和 value 收敛，不替代 parser、resource-limit、Store 或真实服务器测试。
+
+* 被否定的假设
+
+1. =/changes= 是完整 event log；
+2. 一次 full =Email/get= 形成完整 revision；
+3. Preview 是严格 immutable canonical field；
+4. Active generation 表示精确 point-in-time snapshot；
+5. Remote accountId 足以标识 viewer cache；
+6. Destroyed 一定表示物理删除；
+7. Empty query page 也必须验证 position；
+8. =upToId= 一定限制 queryChanges response；
+9. SetResponse.newState 可以无条件成为 local checkpoint；
+10. Rust、ordered KV 或 immutable segment 是 JMAP correctness 的前提。
+
+* Source index
+
+- RFC 8620: https://www.rfc-editor.org/rfc/rfc8620.html
+- RFC 8621: https://www.rfc-editor.org/rfc/rfc8621.html
+- RFC 9404: https://www.rfc-editor.org/rfc/rfc9404.html
+- RFC 9670: https://www.rfc-editor.org/rfc/rfc9670.html
+- RFC 9979: https://www.rfc-editor.org/rfc/rfc9979.html
+- RFC 8620 errata: https://www.rfc-editor.org/errata/rfc8620
+- RFC 8621 errata: https://www.rfc-editor.org/errata/rfc8621
+- IANA IMAP/JMAP keyword registry: https://www.iana.org/assignments/imap-jmap-keywords/
+- JMAP Object Metadata draft: https://datatracker.ietf.org/doc/draft-ietf-jmap-metadata/
+- JMAP Conditional Set draft: https://datatracker.ietf.org/doc/draft-gondwana-jmap-conditional/
