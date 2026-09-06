@@ -270,6 +270,32 @@
       (when (appkit-app-live-p app) (appkit-app-close app))
       (when (file-directory-p root) (delete-directory root t)))))
 
+(ert-deftest chidu-inline-ascii-patch-decodes-eol-without-losing-content-cr ()
+  "Uniform CRLF is decoded; mixed content CR must survive."
+  (let* ((lf "--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-old\n+new\n")
+         (crlf (string-replace "\n" "\r\n" lf))
+         (mixed (string-replace "+new\n" "+new\r\n" lf))
+         (file (make-temp-file "chidu-patch-eol-test-"))
+         (mail-parse-charset nil))
+    (unwind-protect
+        (dolist (sample (list (cons lf lf) (cons crlf lf) (cons mixed mixed)))
+          (let ((coding-system-for-write 'binary))
+            (write-region (car sample) nil file nil 'silent))
+          (with-temp-buffer
+            (chidu-attachment--insert-inline-text
+             (chidu-store-email-attachment-create
+              :part-id "part" :blob-id "blob" :size (string-bytes (car sample))
+              :name "change.patch" :media-type "text/x-patch"
+              :charset "us-ascii" :disposition "inline")
+             file)
+            (should (equal (cdr sample)
+                           (buffer-substring-no-properties (point-min) (point-max)))))
+          (with-temp-buffer
+            (set-buffer-multibyte nil)
+            (insert-file-contents-literally file)
+            (should (equal (car sample) (buffer-string)))))
+      (delete-file file))))
+
 (ert-deftest
     chidu-inline-text-attachments-keep-server-order-and-identity ()
   "Each card renders its own attachment, in the server's exact order."

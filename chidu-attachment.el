@@ -711,7 +711,11 @@ top of the buffer."
             (narrow-to-region start start)
             (unwind-protect
                 (condition-case error-data
-                    (let ((mm-html-inhibit-images t)
+                    (let (;; Gnus skips ASCII decoding when this fallback is nil,
+                          ;; also skipping CRLF conversion.  Decode ASCII normally
+                          ;; without stripping meaningful CR from mixed-EOL patches.
+                          (mail-parse-charset (or mail-parse-charset 'us-ascii))
+                          (mm-html-inhibit-images t)
                           (mm-html-blocked-images ".")
                           (enable-local-variables nil)
                           (enable-dir-local-variables nil)
