@@ -114,8 +114,7 @@
      :time-face 'shadow
      :line-properties
      (list 'chidu-draft-email-id
-           (chidu-store-email-summary-row-local-email-id summary))
-     :mouse-face 'highlight)))
+           (chidu-store-email-summary-row-local-email-id summary)))))
 
 (defun chidu-drafts--print-row (projection-row)
   "Insert one Draft PROJECTION-ROW."

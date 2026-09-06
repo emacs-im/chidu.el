@@ -94,8 +94,7 @@
      :line-properties
      (list 'chidu-contact-card-id (chidu-contact-card-remote-id card))
      :help-echo (format "%s ContactCard"
-                        (capitalize (or kind "individual")))
-     :mouse-face 'highlight)))
+                        (capitalize (or kind "individual"))))))
 
 (defun chidu-contacts--print-row (projection-row)
   "Insert one ContactCard PROJECTION-ROW."

@@ -127,8 +127,7 @@
             (chidu-store-email-summary-row-local-email-id summary))
            'chidu-selection-trash-flagged-p
            (chidu-selection-trash-flagged-p
-            (chidu-store-email-summary-row-local-email-id summary)))
-     :mouse-face 'highlight)))
+            (chidu-store-email-summary-row-local-email-id summary))))))
 
 (defun chidu-search--print-row (projection-row)
   "Insert one search PROJECTION-ROW."
