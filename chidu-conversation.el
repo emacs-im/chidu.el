@@ -1087,10 +1087,9 @@ historically owns Chidu's body fold."
   "o" #'chidu-conversation-open-standalone
   "q" #'quit-window)
 
-(define-derived-mode chidu-conversation-mode special-mode "Chidu-Conversation"
+(define-derived-mode chidu-conversation-mode appkit-discussion-mode "Chidu-Conversation"
   "Major mode for a local-first Chidu reply tree."
-  (setq-local truncate-lines nil
-              chidu-seen-target-function #'chidu-conversation--seen-target
+  (setq-local chidu-seen-target-function #'chidu-conversation--seen-target
               appkit-media-card-fallback-context-function
               #'chidu-conversation--attachment-fallback-context)
   (setq-local filter-buffer-substring-function
