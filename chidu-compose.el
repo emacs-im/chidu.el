@@ -17,7 +17,7 @@
 (require 'appkit-compose)
 (require 'appkit-core)
 (require 'appkit-surface)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-contact)
 (require 'chidu-contact-model)
 (require 'chidu-compose-resource)

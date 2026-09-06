@@ -22,7 +22,7 @@
 (require 'appkit-surface)
 (require 'chidu-root)
 (require 'chidu-runtime)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-mailbox-sync)
 (require 'chidu-store)
 

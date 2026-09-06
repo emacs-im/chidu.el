@@ -1,8 +1,8 @@
-;;; chidu-view-operation.el --- View-owned runtime operations -*- lexical-binding: t; -*-
+;;; chidu-surface-operation.el --- Surface-owned runtime operations -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
-;; Nest opaque Chidu runtime operations under keyed Appkit View operations.
+;; Nest opaque Chidu runtime operations under keyed Appkit Surface effects.
 
 ;;; Code:
 
@@ -10,13 +10,19 @@
 (require 'appkit-surface)
 (require 'chidu-runtime)
 
-(defun chidu-view-runtime (surface)
+(defvar chidu--transition-context nil
+  "Bound while a Chidu reducer collects closed post-commit commands.")
+
+(defvar chidu--transition-commands nil
+  "Commands emitted by domain work in the current Chidu transition.")
+
+(defun chidu-surface-runtime (surface)
   "Return the live Chidu runtime owning SURFACE."
   (or (and (appkit-surface-live-p surface)
            (chidu-app-runtime (appkit-surface-app surface)))
       (error "Chidu reader has no live runtime")))
 
-(defun chidu-view-operation-start
+(defun chidu-surface-operation-start
     (surface key start-function success-function error-function)
   "Request keyed runtime work in the exact owning SURFACE."
   (chidu-post-surface-message surface
@@ -44,7 +50,7 @@
               (`(chidu-operation start ,key ,start ,success ,failure)
                (let
                    ((runtime
-                     (chidu-view-runtime (appkit-current-surface))))
+                     (chidu-surface-runtime (appkit-current-surface))))
                  (appkit-next :model model :render appkit-render-none
                               :commands
                               (list
@@ -124,15 +130,6 @@
   (when (appkit-surface-live-p surface)
     (chidu-post-surface-message surface '(chidu-refresh))))
 
-(provide 'chidu-view-operation)
-
-;;; chidu-view-operation.el ends here
-
-(defvar chidu--transition-context nil
-  "Bound while a Chidu reducer collects closed post-commit commands.")
-(defvar chidu--transition-commands nil
-  "Commands emitted by domain work in the current Chidu transition.")
-
 (defun chidu-post-surface-message (surface message)
   "Schedule MESSAGE for exact SURFACE, respecting active transition boundaries."
   (if chidu--transition-context
@@ -152,3 +149,7 @@
                                     :message message :delivery 'report)
        chidu--transition-commands)
     (appkit-app-send app message)))
+
+(provide 'chidu-surface-operation)
+
+;;; chidu-surface-operation.el ends here

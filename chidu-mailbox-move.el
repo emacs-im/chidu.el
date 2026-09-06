@@ -16,7 +16,7 @@
 (require 'chidu-jmap-mailbox-move)
 (require 'chidu-result)
 (require 'chidu-runtime)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-store)
 (require 'seq)
 

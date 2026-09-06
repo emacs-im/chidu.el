@@ -21,7 +21,7 @@
 (require 'chidu-runtime)
 (require 'chidu-selection)
 (require 'chidu-seen)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-store)
 (require 'chidu-text)
 (require 'chidu-trash)
@@ -233,7 +233,7 @@
     (setf (chidu-summary-state-phase state) phase
           (chidu-summary-state-message state) nil)
     (chidu-summary--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'summary
      (lambda (runtime success-function error-function)
        (chidu-runtime-mailbox-summary
@@ -441,7 +441,7 @@
 (defun chidu-summary--with-mailboxes (view continuation)
   "Call CONTINUATION with current Account Mailboxes for Summary VIEW."
   (let ((state (chidu-summary--view-state view)))
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'mailboxes
      (lambda (runtime success-function error-function)
        (chidu-runtime-list-mailboxes

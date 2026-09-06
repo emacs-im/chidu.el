@@ -18,7 +18,7 @@
 (require 'chidu-contact)
 (require 'chidu-contact-model)
 (require 'chidu-runtime)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-store)
 (require 'chidu-text)
 
@@ -257,7 +257,7 @@ Signal when PAGE cannot be proven to continue the same ordered result set."
           (if append-p 'loading-more 'loading)
           (chidu-contacts-state-message state) nil)
     (chidu-contacts--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'contact-page
      (lambda (runtime success-function error-function)
        (chidu-contact-query-page

@@ -19,7 +19,7 @@
 (require 'chidu-contacts)
 (require 'chidu-root)
 (require 'chidu-runtime)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-store)
 
 (declare-function chidu "chidu" ())
@@ -190,7 +190,7 @@ DEFAULT-EXPANDED-P is the initial Appkit fold state."
     (setf (chidu-address-books-state-phase state) 'loading
           (chidu-address-books-state-message state) nil)
     (chidu-address-books--request-sync it t)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      it 'address-books
      (lambda (runtime success-function error-function)
        (chidu-contact-list-address-books

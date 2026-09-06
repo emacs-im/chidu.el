@@ -23,7 +23,7 @@
 (require 'chidu-search-query)
 (require 'chidu-search-sync)
 (require 'chidu-selection)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-seen)
 (require 'chidu-store)
 (require 'chidu-text)
@@ -270,7 +270,7 @@ Refresh remotely when REFRESH-EMPTY-P and CONTEXT has no revision."
     (setf (chidu-search-state-phase state) 'refreshing
           (chidu-search-state-message state) nil)
     (chidu-search--request-sync it)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      it 'search
      (lambda (runtime success-function error-function)
        (chidu-refresh-search
@@ -306,7 +306,7 @@ Refresh remotely when REFRESH-EMPTY-P and CONTEXT has no revision."
     (setf (chidu-search-state-phase state) 'loading-more
           (chidu-search-state-message state) nil)
     (chidu-search--request-sync it)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      it 'search
      (lambda (runtime success-function error-function)
        (chidu-load-more-search
@@ -323,7 +323,7 @@ Refresh remotely when REFRESH-EMPTY-P and CONTEXT has no revision."
     (setf (chidu-search-state-phase state) 'loading
           (chidu-search-state-message state) nil)
     (chidu-search--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'search
      (lambda (runtime success-function error-function)
        (chidu-runtime-search
@@ -607,7 +607,7 @@ common candidate has it; otherwise prompt when the source is ambiguous."
 (defun chidu-search--with-mailboxes (view continuation)
   "Call CONTINUATION with current Account Mailboxes for Search VIEW."
   (let ((state (chidu-search--state view)))
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'mailboxes
      (lambda (runtime success-function error-function)
        (chidu-runtime-list-mailboxes

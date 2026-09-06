@@ -19,7 +19,7 @@
 (require 'chidu-runtime)
 (require 'chidu-store)
 (require 'chidu-text)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (declare-function chidu-compose-open-context
                   "chidu-compose" (app context))
 (declare-function chidu-dispatch "chidu-transient" ())
@@ -218,7 +218,7 @@
     (setf (chidu-drafts-state-phase state) phase
           (chidu-drafts-state-message state) nil)
     (chidu-drafts--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'drafts
      (lambda (runtime success-function error-function)
        (chidu-runtime-drafts
@@ -306,7 +306,7 @@
               "Opening local Draft checkout…"
             "Checking out server Draft…"))
     (chidu-drafts--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'checkout
      (lambda (runtime success-function error-function)
        (chidu-checkout-draft

@@ -20,7 +20,7 @@
 (require 'appkit-surface)
 (require 'appkit-media-effect)
 (require 'appkit-transaction)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'appkit-media-card)
 (require 'appkit-media-image)
 (require 'appkit-media-resource)

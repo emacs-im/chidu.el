@@ -17,7 +17,7 @@
 (require 'chidu-contact)
 (require 'chidu-contact-model)
 (require 'chidu-runtime)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-store)
 
 (declare-function chidu-compose-to-contact "chidu-compose" (endpoint card))
@@ -215,7 +215,7 @@
     (setf (chidu-contact-view-state-phase state) 'loading
           (chidu-contact-view-state-message state) nil)
     (chidu-contact-view--request-sync it)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      it 'contact-detail
      (lambda (runtime success-function error-function)
        (chidu-contact-get-detail

@@ -15,7 +15,7 @@
 (require 'chidu-record)
 (require 'chidu-result)
 (require 'chidu-runtime)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-store)
 
 (chidu-define-record chidu-seen-target

@@ -26,7 +26,7 @@
 (require 'chidu-runtime)
 (require 'chidu-store)
 (require 'chidu-text)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (declare-function chidu-dispatch "chidu-transient" ())
 
 (cl-defstruct
@@ -228,7 +228,7 @@ Refresh its remote Blob when REFRESH-EMPTY-P and CONTEXT has no message."
     (setf (chidu-parsed-message-state-phase state) 'refreshing
           (chidu-parsed-message-state-problem state) nil)
     (chidu-parsed-message--request-sync it)
-    (chidu-view-operation-start it 'parsed-message
+    (chidu-surface-operation-start it 'parsed-message
                                 (lambda
                                   (runtime success-function
                                            error-function)
@@ -253,7 +253,7 @@ Refresh its remote Blob when REFRESH-EMPTY-P and CONTEXT has no message."
     (setf (chidu-parsed-message-state-phase state) 'loading
           (chidu-parsed-message-state-problem state) nil)
     (chidu-parsed-message--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'parsed-message
      (lambda (runtime success-function error-function)
        (chidu-runtime-parsed-blob

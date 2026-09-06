@@ -16,7 +16,7 @@
 (require 'chidu-jmap-trash)
 (require 'chidu-result)
 (require 'chidu-runtime)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 (require 'chidu-store)
 
 (cl-defstruct (chidu-trash-workflow

@@ -23,7 +23,7 @@
 (require 'chidu-seen)
 (require 'chidu-store)
 (require 'chidu-text)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 
 (declare-function chidu-attachment-toggle-inline-at-point-exact
                   "chidu-attachment" ())
@@ -283,7 +283,7 @@ Refresh its remote body when REFRESH-EMPTY-P and CONTEXT has no body."
     (setf (chidu-message-state-phase state) 'refreshing
           (chidu-message-state-message state) nil)
     (chidu-message--request-sync it)
-    (chidu-view-operation-start it 'body
+    (chidu-surface-operation-start it 'body
                                 (lambda
                                   (runtime success-function
                                            error-function)
@@ -305,7 +305,7 @@ Refresh its remote body when REFRESH-EMPTY-P and CONTEXT has no body."
     (setf (chidu-message-state-phase state) 'loading
           (chidu-message-state-message state) nil)
     (chidu-message--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'body
      (lambda (runtime success-function error-function)
        (chidu-runtime-email-body

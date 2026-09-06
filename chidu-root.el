@@ -19,7 +19,7 @@
 (require 'appkit-presentation)
 (require 'chidu-store)
 (require 'chidu-runtime)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 
 (declare-function chidu-refresh "chidu" ())
 (declare-function chidu-restart "chidu" ())

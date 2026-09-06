@@ -27,7 +27,7 @@
 (require 'chidu-seen)
 (require 'chidu-store)
 (require 'chidu-text)
-(require 'chidu-view-operation)
+(require 'chidu-surface-operation)
 
 (declare-function chidu-attachment-card-at-point-p
                   "chidu-attachment" (&optional exact-p))
@@ -777,7 +777,7 @@ Refresh remotely when REFRESH-EMPTY-P and CONTEXT has no revision."
              (chidu-conversation-state-body-phases state))
     (remhash local-id (chidu-conversation-state-body-messages state))
     (chidu-conversation--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view key
      (lambda (runtime success-function error-function)
        (chidu-refresh-email-body
@@ -801,7 +801,7 @@ Refresh remotely when REFRESH-EMPTY-P and CONTEXT has no revision."
                  (chidu-conversation-state-body-phases state))
         (remhash local-id (chidu-conversation-state-body-messages state))
         (chidu-conversation--request-sync view)
-        (chidu-view-operation-start
+        (chidu-surface-operation-start
          view key
          (lambda (runtime success-function error-function)
            (chidu-runtime-email-body
@@ -829,7 +829,7 @@ Refresh remotely when REFRESH-EMPTY-P and CONTEXT has no revision."
     (setf (chidu-conversation-state-phase state) 'refreshing
           (chidu-conversation-state-message state) nil)
     (chidu-conversation--request-sync it)
-    (chidu-view-operation-start it 'conversation
+    (chidu-surface-operation-start it 'conversation
                                 (lambda
                                   (runtime success-function
                                            error-function)
@@ -853,7 +853,7 @@ Refresh remotely when REFRESH-EMPTY-P and CONTEXT has no revision."
     (setf (chidu-conversation-state-phase state) 'loading
           (chidu-conversation-state-message state) nil)
     (chidu-conversation--request-sync view)
-    (chidu-view-operation-start
+    (chidu-surface-operation-start
      view 'conversation
      (lambda (runtime success-function error-function)
        (chidu-runtime-conversation
