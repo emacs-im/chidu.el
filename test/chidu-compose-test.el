@@ -28,7 +28,7 @@
   "Return one encoded JMAP METHOD response for CALL-ID and ARGUMENTS."
   (chidu-compose-test--payload
    `(:sessionState "session"
-                   :methodResponses [[,method ,arguments ,call-id]])))
+     :methodResponses [[,method ,arguments ,call-id]])))
 
 (defun chidu-compose-test--store-call (store operation)
   "Synchronously invoke STORE OPERATION."
@@ -534,7 +534,7 @@
         (not-destroyed (make-hash-table :test #'equal)))
     (puthash "create-1"
              '(:id "draft-1" :blobId "blob-1" :threadId "thread-1"
-                   :size 81)
+               :size 81)
              created)
     (puthash "drafts" t mailboxes)
     (puthash "$draft" t keywords)
@@ -543,7 +543,7 @@
             (chidu-compose-test--method-response
              "Email/set" "draft-create"
              `(:accountId "account" :oldState "e0" :newState "e1"
-                          :created ,created :notCreated :json-null))
+               :created ,created :notCreated :json-null))
             "account" "create-1")))
       (should (eq 'succeeded
                   (chidu-jmap-draft-create-result-outcome result)))
@@ -554,51 +554,51 @@
     (let ((extra-created (make-hash-table :test #'equal)))
       (puthash "other"
                '(:id "other" :blobId "blob-other" :threadId "thread-other"
-                     :size 1)
+                 :size 1)
                extra-created)
       (should-error
        (chidu-jmap-draft-validate-create-response
         (chidu-compose-test--method-response
          "Email/set" "draft-create"
          `(:accountId "account" :oldState "e0" :newState "e1"
-                      :created ,extra-created :notCreated :json-null))
+           :created ,extra-created :notCreated :json-null))
         "account" "create-1")
        :type 'chidu-jmap-error))
     (should-error
      (chidu-jmap-draft-validate-reconcile-response
       (chidu-compose-test--payload
        '(:sessionState "session"
-                       :methodResponses
-                       [["Email/query"
-                         (:accountId "account" :queryState "q1"
-                                     :canCalculateChanges t :position 0
-                                     :ids ["draft-1"] :total 1)
-                         "draft-query"]
-                        ["Email/get"
-                         (:accountId "account" :state "e1"
-                                     :list [] :notFound [])
-                         "draft-get"]]))
+         :methodResponses
+         [["Email/query"
+           (:accountId "account" :queryState "q1"
+            :canCalculateChanges t :position 0
+            :ids ["draft-1"] :total 1)
+           "draft-query"]
+          ["Email/get"
+           (:accountId "account" :state "e1"
+            :list [] :notFound [])
+           "draft-get"]]))
       "account" "drafts" "chidu.first@example.test")
      :type 'chidu-jmap-error)
     (let ((matches
            (chidu-jmap-draft-validate-reconcile-response
             (chidu-compose-test--payload
              `(:sessionState "session"
-                             :methodResponses
-                             [["Email/query"
-                               (:accountId "account" :queryState "q1"
-                                           :canCalculateChanges t :position 0
-                                           :ids ["draft-1"] :total 1)
-                               "draft-query"]
-                              ["Email/get"
-                               (:accountId "account" :state "e1"
-                                           :list
-                                           [(:id "draft-1"
-                                                 :blobId "blob-1"
-                                                 :messageId ["chidu.first@example.test"]
-                                                 :mailboxIds ,mailboxes :keywords ,keywords)]
-                                           :notFound [])
-                               "draft-get"]]))
+               :methodResponses
+               [["Email/query"
+                 (:accountId "account" :queryState "q1"
+                  :canCalculateChanges t :position 0
+                  :ids ["draft-1"] :total 1)
+                 "draft-query"]
+                ["Email/get"
+                 (:accountId "account" :state "e1"
+                  :list
+                  [(:id "draft-1"
+                    :blobId "blob-1"
+                    :messageId ["chidu.first@example.test"]
+                    :mailboxIds ,mailboxes :keywords ,keywords)]
+                  :notFound [])
+                 "draft-get"]]))
             "account" "drafts" "chidu.first@example.test")))
       (should (= 1 (length matches)))
       (should
@@ -614,10 +614,10 @@
             (chidu-compose-test--method-response
              "Email/get" "draft-cleanup-get"
              `(:accountId "account" :state "e2"
-                          :list
-                          [(:id "draft-1" :blobId "blob-1"
-                                :mailboxIds ,mailboxes :keywords ,keywords)]
-                          :notFound []))
+               :list
+               [(:id "draft-1" :blobId "blob-1"
+                 :mailboxIds ,mailboxes :keywords ,keywords)]
+               :notFound []))
             "account" "draft-1")))
       (should (chidu-jmap-draft-cleanup-evidence-found-p evidence))
       (should (equal "e2"
@@ -626,8 +626,8 @@
                      (chidu-jmap-draft-cleanup-evidence-remote-blob-id
                       evidence))))
     (let* ((request
-            (chidu-jmap-draft-cleanup-request
-             "account" "draft-1" "e2"))
+             (chidu-jmap-draft-cleanup-request
+              "account" "draft-1" "e2"))
            (arguments (aref (aref (plist-get request :methodCalls) 0) 1)))
       (should (equal "e2" (plist-get arguments :ifInState))))
     (puthash "draft-1" '(:type "notFound") not-destroyed)
@@ -636,7 +636,7 @@
             (chidu-compose-test--method-response
              "Email/set" "draft-cleanup"
              `(:accountId "account" :oldState "e1" :newState "e1"
-                          :destroyed [] :notDestroyed ,not-destroyed))
+               :destroyed [] :notDestroyed ,not-destroyed))
             "account" "draft-1")))
       (should
        (eq 'succeeded
@@ -989,8 +989,7 @@
               (should
                (member
                 "Me <me@example.test>"
-                (all-completions "" (nth 2 completion))))
-              )))
+                (all-completions "" (nth 2 completion)))))))
       (when (buffer-live-p compose-buffer)
         (with-current-buffer compose-buffer
           (setq-local chidu-compose--closing-p t))
@@ -1159,7 +1158,7 @@
            (chidu-jmap-upload-validate-response
             (chidu-compose-test--payload
              '(:accountId "remote-account" :blobId "blob-note"
-                          :type "text/plain" :size 4))
+               :type "text/plain" :size 4))
             "remote-account" "text/plain" 4)))
       (should (equal "blob-note" (chidu-jmap-upload-result-blob-id result))))
     (should (equal "multipart/mixed" (gethash "type" structure)))

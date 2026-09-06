@@ -50,16 +50,16 @@
     (puthash "account" account accounts)
     (chidu-store-test--payload
      `(:capabilities ,capabilities
-                     :accounts ,accounts
-                     :primaryAccounts ,primary
-                     :username "me@example.test"
-                     :apiUrl "https://mail.example.test/jmap/api"
-                     :downloadUrl
-                     "https://mail.example.test/jmap/download/{accountId}/{blobId}/{name}?type={type}"
-                     :uploadUrl "https://mail.example.test/jmap/upload/{accountId}"
-                     :eventSourceUrl
-                     "https://mail.example.test/jmap/eventsource/?types={types}"
-                     :state "session-state"))))
+       :accounts ,accounts
+       :primaryAccounts ,primary
+       :username "me@example.test"
+       :apiUrl "https://mail.example.test/jmap/api"
+       :downloadUrl
+       "https://mail.example.test/jmap/download/{accountId}/{blobId}/{name}?type={type}"
+       :uploadUrl "https://mail.example.test/jmap/upload/{accountId}"
+       :eventSourceUrl
+       "https://mail.example.test/jmap/eventsource/?types={types}"
+       :state "session-state"))))
 
 (ert-deftest chidu-session-preserves-primary-contacts-account ()
   (let ((session
@@ -77,7 +77,7 @@
 
 (ert-deftest chidu-contact-request-is-native-query-plus-result-reference ()
   (let* ((request
-          (chidu-jmap-contact-search-request "account" "alice" 24))
+           (chidu-jmap-contact-search-request "account" "alice" 24))
          (using (plist-get request :using))
          (calls (plist-get request :methodCalls))
          (addressbook-call (aref calls 0))
@@ -114,11 +114,11 @@
         (hidden-emails (make-hash-table :test #'equal)))
     (puthash "work"
              '(:address "alice@work.example" :pref 2
-                        :contexts (:work t))
+               :contexts (:work t))
              alice-emails)
     (puthash "home"
              '(:address "alice@home.example" :pref 1
-                        :contexts (:private t))
+               :contexts (:private t))
              alice-emails)
     (puthash "main" '(:address "bob@example.test") bob-emails)
     (puthash "list" '(:address "team@example.test") group-emails)
@@ -126,48 +126,48 @@
     (let* ((bytes
             (chidu-store-test--payload
              `(:sessionState "session"
-                             :methodResponses
-                             [["AddressBook/get"
-                               (:accountId "account" :state "a1"
-                                           :list
-                                           [(:id "book-visible" :isSubscribed t
-                                                 :myRights (:mayRead t :mayWrite t
-                                                                     :mayShare :json-false :mayDelete :json-false))
-                                            (:id "book-hidden" :isSubscribed :json-false
-                                                 :myRights (:mayRead t :mayWrite :json-false
-                                                                     :mayShare :json-false :mayDelete :json-false))]
-                                           :notFound [])
-                               "addressbook-get"]
-                              ["ContactCard/query"
-                               (:accountId "account" :queryState "q1"
-                                           :canCalculateChanges t :position 0
-                                           :ids ["c1" "c2" "c3" "c4"] :total 4)
-                               "contact-query"]
-                              ["ContactCard/get"
-                               (:accountId "account" :state "c1"
-                                           :list
-                                           [(:id "c1" :uid "uid-c1" :kind "individual"
-                                                 :addressBookIds (:book-visible t)
-                                                 :name (:full "Alice Example")
-                                                 :emails ,alice-emails)
-                                            (:id "c2" :uid "uid-c2" :kind "individual"
-                                                 :addressBookIds (:book-visible t)
-                                                 :name
-                                                 (:components
-                                                  [(:kind "given" :value "Bob")
-                                                   (:kind "surname" :value "Builder")]
-                                                  :isOrdered t)
-                                                 :emails ,bob-emails)
-                                            (:id "c3" :uid "uid-c3" :kind "group"
-                                                 :addressBookIds (:book-visible t)
-                                                 :name (:full "Team")
-                                                 :emails ,group-emails)
-                                            (:id "c4" :uid "uid-c4" :kind "individual"
-                                                 :addressBookIds (:book-hidden t)
-                                                 :name (:full "Hidden")
-                                                 :emails ,hidden-emails)]
-                                           :notFound [])
-                               "contact-get"]])))
+               :methodResponses
+               [["AddressBook/get"
+                 (:accountId "account" :state "a1"
+                  :list
+                  [(:id "book-visible" :isSubscribed t
+                    :myRights (:mayRead t :mayWrite t
+                               :mayShare :json-false :mayDelete :json-false))
+                   (:id "book-hidden" :isSubscribed :json-false
+                    :myRights (:mayRead t :mayWrite :json-false
+                               :mayShare :json-false :mayDelete :json-false))]
+                  :notFound [])
+                 "addressbook-get"]
+                ["ContactCard/query"
+                 (:accountId "account" :queryState "q1"
+                  :canCalculateChanges t :position 0
+                  :ids ["c1" "c2" "c3" "c4"] :total 4)
+                 "contact-query"]
+                ["ContactCard/get"
+                 (:accountId "account" :state "c1"
+                  :list
+                  [(:id "c1" :uid "uid-c1" :kind "individual"
+                    :addressBookIds (:book-visible t)
+                    :name (:full "Alice Example")
+                    :emails ,alice-emails)
+                   (:id "c2" :uid "uid-c2" :kind "individual"
+                    :addressBookIds (:book-visible t)
+                    :name
+                    (:components
+                     [(:kind "given" :value "Bob")
+                      (:kind "surname" :value "Builder")]
+                     :isOrdered t)
+                    :emails ,bob-emails)
+                   (:id "c3" :uid "uid-c3" :kind "group"
+                    :addressBookIds (:book-visible t)
+                    :name (:full "Team")
+                    :emails ,group-emails)
+                   (:id "c4" :uid "uid-c4" :kind "individual"
+                    :addressBookIds (:book-hidden t)
+                    :name (:full "Hidden")
+                    :emails ,hidden-emails)]
+                  :notFound [])
+                 "contact-get"]])))
            (candidates
             (chidu-jmap-contact-validate-search-response
              bytes "account" 4 4)))
@@ -190,16 +190,16 @@
           (chidu-store-test--method-response
            "AddressBook/get" "addressbook-get"
            '(:accountId "account" :state "a1"
-                        :list
-                        [(:id "later" :name "Later" :description :json-null
-                              :sortOrder 20 :isDefault :json-false :isSubscribed t
-                              :myRights (:mayRead t :mayWrite :json-false
-                                                  :mayShare :json-false :mayDelete :json-false))
-                         (:id "first" :name "First" :description "Personal"
-                              :sortOrder 0 :isDefault t :isSubscribed t
-                              :myRights (:mayRead t :mayWrite t
-                                                  :mayShare t :mayDelete t))]
-                        :notFound :json-null)))
+             :list
+             [(:id "later" :name "Later" :description :json-null
+               :sortOrder 20 :isDefault :json-false :isSubscribed t
+               :myRights (:mayRead t :mayWrite :json-false
+                          :mayShare :json-false :mayDelete :json-false))
+              (:id "first" :name "First" :description "Personal"
+               :sortOrder 0 :isDefault t :isSubscribed t
+               :myRights (:mayRead t :mayWrite t
+                          :mayShare t :mayDelete t))]
+             :notFound :json-null)))
          (directory
           (chidu-jmap-contact-validate-address-books-response
            bytes "account"))
@@ -219,8 +219,8 @@
 
 (ert-deftest chidu-contact-page-request-is-address-book-scoped-and-anchored ()
   (let* ((request
-          (chidu-jmap-contact-page-request
-           "account" "book" "alice" 32 "contact-1"))
+           (chidu-jmap-contact-page-request
+            "account" "book" "alice" 32 "contact-1"))
          (calls (plist-get request :methodCalls))
          (query (aref (aref calls 0) 1))
          (get (aref (aref calls 1) 1)))
@@ -240,23 +240,23 @@
   (let* ((bytes
           (chidu-store-test--payload
            '(:sessionState "session"
-                           :methodResponses
-                           [["ContactCard/query"
-                             (:accountId "account" :queryState "q1"
-                                         :canCalculateChanges t :position 1
-                                         :ids ["c2" "c1"] :total 5)
-                             "contact-query"]
-                            ["ContactCard/get"
-                             (:accountId "account" :state "c1"
-                                         :list
-                                         [(:id "c1" :uid "uid-c1" :kind "individual"
-                                               :addressBookIds (:book t)
-                                               :name (:full "Alice"))
-                                          (:id "c2" :uid "uid-c2" :kind "individual"
-                                               :addressBookIds (:book t)
-                                               :name (:full "Bob"))]
-                                         :notFound [])
-                             "contact-get"]])))
+             :methodResponses
+             [["ContactCard/query"
+               (:accountId "account" :queryState "q1"
+                :canCalculateChanges t :position 1
+                :ids ["c2" "c1"] :total 5)
+               "contact-query"]
+              ["ContactCard/get"
+               (:accountId "account" :state "c1"
+                :list
+                [(:id "c1" :uid "uid-c1" :kind "individual"
+                  :addressBookIds (:book t)
+                  :name (:full "Alice"))
+                 (:id "c2" :uid "uid-c2" :kind "individual"
+                  :addressBookIds (:book t)
+                  :name (:full "Bob"))]
+                :notFound [])
+               "contact-get"]])))
          (page
           (chidu-jmap-contact-validate-page-response
            bytes "account" "" 2)))
@@ -275,20 +275,20 @@
   (let* ((bytes
           (chidu-store-test--payload
            '(:sessionState "session"
-                           :methodResponses
-                           [["ContactCard/query"
-                             (:accountId "account" :queryState "q1"
-                                         :canCalculateChanges t :position 0
-                                         :ids ["gone" "present"] :total 3)
-                             "contact-query"]
-                            ["ContactCard/get"
-                             (:accountId "account" :state "c1"
-                                         :list
-                                         [(:id "present" :uid "uid-present" :kind "individual"
-                                               :addressBookIds (:book t)
-                                               :name (:full "Present"))]
-                                         :notFound ["gone"])
-                             "contact-get"]])))
+             :methodResponses
+             [["ContactCard/query"
+               (:accountId "account" :queryState "q1"
+                :canCalculateChanges t :position 0
+                :ids ["gone" "present"] :total 3)
+               "contact-query"]
+              ["ContactCard/get"
+               (:accountId "account" :state "c1"
+                :list
+                [(:id "present" :uid "uid-present" :kind "individual"
+                  :addressBookIds (:book t)
+                  :name (:full "Present"))]
+                :notFound ["gone"])
+               "contact-get"]])))
          (page
           (chidu-jmap-contact-validate-page-response
            bytes "account" "" 2)))
@@ -307,34 +307,34 @@
         (services (make-hash-table :test #'equal))
         (notes (make-hash-table :test #'equal)))
     (puthash "mail" '(:address "alice@example.test" :pref 1
-                               :contexts (:work t)) emails)
+                      :contexts (:work t)) emails)
     (puthash "mobile" '(:number "+1 555 0100"
-                                :features (:mobile t)) phones)
+                        :features (:mobile t)) phones)
     (puthash "org" '(:name "Example Corp"
-                           :units [(:name "Engineering")]) organizations)
+                     :units [(:name "Engineering")]) organizations)
     (puthash "title" '(:name "Engineer" :kind "title"
-                             :organizationId "org") titles)
+                       :organizationId "org") titles)
     (puthash "home" '(:full "1 Example Street" :countryCode "US")
              addresses)
     (puthash "chat" '(:service "Matrix" :user "@alice:example.test"
-                               :uri "https://matrix.to/#/@alice:example.test")
+                      :uri "https://matrix.to/#/@alice:example.test")
              services)
     (puthash "note" '(:note "Met at the JMAP workshop.") notes)
     (let* ((bytes
             (chidu-store-test--method-response
              "ContactCard/get" "contact-detail"
              `(:accountId "account" :state "c1"
-                          :list
-                          [(:id "c1" :uid "uid-c1" :kind "individual"
-                                :addressBookIds (:book t)
-                                :name (:full "Alice Example")
-                                :emails ,emails :phones ,phones
-                                :organizations ,organizations :titles ,titles
-                                :addresses ,addresses :onlineServices ,services
-                                :notes ,notes :members (:uid-c2 t)
-                                :created "2026-08-01T00:00:00Z"
-                                :updated "2026-08-27T00:00:00Z")]
-                          :notFound [])))
+               :list
+               [(:id "c1" :uid "uid-c1" :kind "individual"
+                 :addressBookIds (:book t)
+                 :name (:full "Alice Example")
+                 :emails ,emails :phones ,phones
+                 :organizations ,organizations :titles ,titles
+                 :addresses ,addresses :onlineServices ,services
+                 :notes ,notes :members (:uid-c2 t)
+                 :created "2026-08-01T00:00:00Z"
+                 :updated "2026-08-27T00:00:00Z")]
+               :notFound [])))
            (card
             (chidu-jmap-contact-validate-detail-response
              bytes "account" "c1")))

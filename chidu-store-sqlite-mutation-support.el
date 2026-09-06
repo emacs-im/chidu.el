@@ -36,13 +36,13 @@
    (caar
     (chidu-sql-select database
       [:select [operation-id]
-               :from jmap-mailbox-move
-               :where [:= account-id [:bind account-id]]]))
+       :from jmap-mailbox-move
+       :where [:= account-id [:bind account-id]]]))
    (caar
     (chidu-sql-select database
       [:select [operation-id]
-               :from jmap-trash-operation
-               :where [:= account-id [:bind account-id]]]))))
+       :from jmap-trash-operation
+       :where [:= account-id [:bind account-id]]]))))
 
 (defun chidu-store-sqlite--mailbox-mutation-operation-owner
     (database operation-id)
@@ -51,13 +51,13 @@
    (caar
     (chidu-sql-select database
       [:select [account-id]
-               :from jmap-mailbox-move
-               :where [:= operation-id [:bind operation-id]]]))
+       :from jmap-mailbox-move
+       :where [:= operation-id [:bind operation-id]]]))
    (caar
     (chidu-sql-select database
       [:select [account-id]
-               :from jmap-trash-operation
-               :where [:= operation-id [:bind operation-id]]]))))
+       :from jmap-trash-operation
+       :where [:= operation-id [:bind operation-id]]]))))
 
 (defun chidu-store-sqlite--compact-search-ordinals
     (database account-id query-key)
@@ -67,28 +67,28 @@
           #'car
           (chidu-sql-select database
             [:select [local-email-id]
-                     :from jmap-search-projection-row
-                     :where [:and
-                             [:= account-id [:bind account-id]]
-                             [:= query-key [:bind query-key]]]
-                     :order-by [[ordinal :asc]]]))))
+             :from jmap-search-projection-row
+             :where [:and
+                     [:= account-id [:bind account-id]]
+                     [:= query-key [:bind query-key]]]
+             :order-by [[ordinal :asc]]]))))
     (chidu-sql-execute database
       [:update jmap-search-projection-row
-               :set [[ordinal [:+ ordinal 1000000000]]]
-               :where [:and
-                       [:= account-id [:bind account-id]]
-                       [:= query-key [:bind query-key]]]])
+       :set [[ordinal [:+ ordinal 1000000000]]]
+       :where [:and
+               [:= account-id [:bind account-id]]
+               [:= query-key [:bind query-key]]]])
     (cl-loop
      for local-id in ids
      for ordinal from 0
      do
      (chidu-sql-execute database
        [:update jmap-search-projection-row
-                :set [[ordinal [:bind ordinal]]]
-                :where [:and
-                        [:= account-id [:bind account-id]]
-                        [:= query-key [:bind query-key]]
-                        [:= local-email-id [:bind local-id]]]]))))
+        :set [[ordinal [:bind ordinal]]]
+        :where [:and
+                [:= account-id [:bind account-id]]
+                [:= query-key [:bind query-key]]
+                [:= local-email-id [:bind local-id]]]]))))
 
 (provide 'chidu-store-sqlite-mutation-support)
 

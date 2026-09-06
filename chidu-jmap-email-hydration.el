@@ -41,12 +41,12 @@
 
 KIND is `full' or `mutable'."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/get"
-             (:accountId ,remote-account-id
-                         :ids ,remote-email-ids
-                         :properties ,(chidu-jmap-email-hydration--properties kind))
-             "email-hydration"]]))
+    :methodCalls
+    [["Email/get"
+      (:accountId ,remote-account-id
+       :ids ,remote-email-ids
+       :properties ,(chidu-jmap-email-hydration--properties kind))
+      "email-hydration"]]))
 
 (defun chidu-jmap-email-hydration--set-vector (object)
   "Return sorted keys from validated Boolean-set OBJECT."

@@ -196,9 +196,9 @@
        (`(,context ,attachment)
         (chidu-attachment-test--fixture nil (string-bytes patch)
                                         '(:name "change.patch"
-                                                :media-type "text/x-diff"
-                                                :charset "us-ascii"
-                                                :disposition "inline")))
+                                          :media-type "text/x-diff"
+                                          :charset "us-ascii"
+                                          :disposition "inline")))
        (root (make-temp-file "chidu-inline-attachment-test-" t))
        (chidu-data-root root)
        (app
@@ -390,9 +390,9 @@
        (`(,context ,attachment)
         (chidu-attachment-test--fixture nil (string-bytes text)
                                         '(:name "note.txt"
-                                                :media-type "text/plain"
-                                                :charset "us-ascii"
-                                                :disposition "inline")))
+                                          :media-type "text/plain"
+                                          :charset "us-ascii"
+                                          :disposition "inline")))
        (root (make-temp-file "chidu-inline-fetch-test-" t))
        (chidu-data-root root)
        (app
@@ -485,9 +485,9 @@
        (`(,context ,attachment)
         (chidu-attachment-test--fixture nil (string-bytes text)
                                         '(:name "notes.gz"
-                                                :media-type "text/plain"
-                                                :charset "us-ascii"
-                                                :disposition "inline")))
+                                          :media-type "text/plain"
+                                          :charset "us-ascii"
+                                          :disposition "inline")))
        (root (make-temp-file "chidu-inline-inert-test-" t))
        (chidu-data-root root)
        (app

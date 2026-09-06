@@ -282,7 +282,7 @@ Content-IDs safely."
          (when (and (appkit-surface-live-p surface)
                     (memq (appkit-surface-type-mode (appkit-surface-type surface))
                           '(chidu-conversation-mode chidu-message-mode
-                                                    chidu-parsed-message-mode)))
+                            chidu-parsed-message-mode)))
            (chidu-surface-refresh surface))))
      (appkit-app-surfaces app)))
   entry)

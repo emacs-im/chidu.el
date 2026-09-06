@@ -23,11 +23,11 @@
   (caar
    (chidu-sql-select database
      [:select [local-email-id]
-              :from jmap-email-record
-              :where [:and
-                      [:= account-id [:bind account-id]]
-                      [:= remote-email-id [:bind remote-email-id]]]
-              :limit 1])))
+      :from jmap-email-record
+      :where [:and
+              [:= account-id [:bind account-id]]
+              [:= remote-email-id [:bind remote-email-id]]]
+      :limit 1])))
 
 (defun chidu-store-sqlite--email-metadata
     (database account-id local-email-id)
@@ -239,11 +239,11 @@ Email identity."
              database account-id remote-email-id change-seq))
       (chidu-sql-execute database
         [:insert :into jmap-email-generation-member
-                 :row
-                 [[account-id [:bind account-id]]
-                  [generation-id [:bind generation-id]]
-                  [local-email-id [:bind local-id]]
-                  [ordinal [:bind next-ordinal]]]])
+         :row
+         [[account-id [:bind account-id]]
+          [generation-id [:bind generation-id]]
+          [local-email-id [:bind local-id]]
+          [ordinal [:bind next-ordinal]]]])
       (list local-id (1+ next-ordinal) t))))
 
 (defun chidu-store-sqlite--remove-generation-remote-id
@@ -382,28 +382,28 @@ active generation.  The value is (NEXT-ORDINAL NEW-LOCAL-EMAIL-IDS)."
           (if live-p
               (chidu-sql-execute database
                 [:update jmap-email-checkpoint
-                         :set
-                         [[phase [:literal "live"]]
-                          [state
-                           [:bind
-                            (chidu-store-email-changes-observation-new-state changes)]]
-                          [committed-count
-                           [:bind
-                            (chidu-store-sqlite--generation-member-count
-                             database account-id generation-id)]]
-                          [revision [:bind (1+ expected-revision)]]
-                          [observed-change-seq [:bind change-seq]]]
-                         :where [:= account-id [:bind account-id]]])
+                 :set
+                 [[phase [:literal "live"]]
+                  [state
+                   [:bind
+                    (chidu-store-email-changes-observation-new-state changes)]]
+                  [committed-count
+                   [:bind
+                    (chidu-store-sqlite--generation-member-count
+                     database account-id generation-id)]]
+                  [revision [:bind (1+ expected-revision)]]
+                  [observed-change-seq [:bind change-seq]]]
+                 :where [:= account-id [:bind account-id]]])
             (chidu-sql-execute database
               [:update jmap-email-checkpoint
-                       :set
-                       [[phase [:bind (if closed-p "activating" "metadata-catchup")]]
-                        [state
-                         [:bind
-                          (chidu-store-email-changes-observation-new-state changes)]]
-                        [revision [:bind (1+ expected-revision)]]
-                        [observed-change-seq [:bind change-seq]]]
-                       :where [:= account-id [:bind account-id]]]))))
+               :set
+               [[phase [:bind (if closed-p "activating" "metadata-catchup")]]
+                [state
+                 [:bind
+                  (chidu-store-email-changes-observation-new-state changes)]]
+                [revision [:bind (1+ expected-revision)]]
+                [observed-change-seq [:bind change-seq]]]
+               :where [:= account-id [:bind account-id]]]))))
       (let ((context-result
              (chidu-store-sqlite--email-context state account-id)))
         (if (chidu-result-failure-p context-result)
@@ -486,10 +486,10 @@ active generation.  The value is (NEXT-ORDINAL NEW-LOCAL-EMAIL-IDS)."
    (caar
     (chidu-sql-select database
       [:select [[:call count 1]]
-               :from jmap-email-generation-member
-               :where [:and
-                       [:= account-id [:bind account-id]]
-                       [:= generation-id [:bind generation-id]]]]))
+       :from jmap-email-generation-member
+       :where [:and
+               [:= account-id [:bind account-id]]
+               [:= generation-id [:bind generation-id]]]]))
    0))
 
 (defun chidu-store-sqlite--generation-incomplete-metadata-count
@@ -499,19 +499,19 @@ active generation.  The value is (NEXT-ORDINAL NEW-LOCAL-EMAIL-IDS)."
    (caar
     (chidu-sql-select database
       [:select [[:call count 1]]
-               :from [:as jmap-email-generation-member member]
-               :joins
-               [[:left [:as jmap-email-metadata metadata]
-                       :on [:and
-                            [:= metadata:account-id member:account-id]
-                            [:= metadata:local-email-id member:local-email-id]]]]
-               :where
-               [:and
-                [:= member:account-id [:bind account-id]]
-                [:= member:generation-id [:bind generation-id]]
-                [:or
-                 [:is metadata:local-email-id nil]
-                 [:!= metadata:profile-version [:bind profile]]]]]))
+       :from [:as jmap-email-generation-member member]
+       :joins
+       [[:left [:as jmap-email-metadata metadata]
+         :on [:and
+              [:= metadata:account-id member:account-id]
+              [:= metadata:local-email-id member:local-email-id]]]]
+       :where
+       [:and
+        [:= member:account-id [:bind account-id]]
+        [:= member:generation-id [:bind generation-id]]
+        [:or
+         [:is metadata:local-email-id nil]
+         [:!= metadata:profile-version [:bind profile]]]]]))
    0))
 
 (defun chidu-store-sqlite--generation-missing-mailbox-count
@@ -521,18 +521,18 @@ active generation.  The value is (NEXT-ORDINAL NEW-LOCAL-EMAIL-IDS)."
    (caar
     (chidu-sql-select database
       [:select [[:call count 1]]
-               :from [:as jmap-email-generation-member member]
-               :where
-               [:and
-                [:= member:account-id [:bind account-id]]
-                [:= member:generation-id [:bind generation-id]]
-                [:not-exists
-                 [:select [1]
-                          :from [:as jmap-email-generation-mailbox membership]
-                          :where [:and
-                                  [:= membership:account-id member:account-id]
-                                  [:= membership:generation-id member:generation-id]
-                                  [:= membership:local-email-id member:local-email-id]]]]]]))
+       :from [:as jmap-email-generation-member member]
+       :where
+       [:and
+        [:= member:account-id [:bind account-id]]
+        [:= member:generation-id [:bind generation-id]]
+        [:not-exists
+         [:select [1]
+          :from [:as jmap-email-generation-mailbox membership]
+          :where [:and
+                  [:= membership:account-id member:account-id]
+                  [:= membership:generation-id member:generation-id]
+                  [:= membership:local-email-id member:local-email-id]]]]]]))
    0))
 
 (defun chidu-store-sqlite--generation-unavailable-mailbox-count
@@ -542,20 +542,20 @@ active generation.  The value is (NEXT-ORDINAL NEW-LOCAL-EMAIL-IDS)."
    (caar
     (chidu-sql-select database
       [:select [[:call count 1]]
-               :from [:as jmap-email-generation-mailbox membership]
-               :where
-               [:and
-                [:= membership:account-id [:bind account-id]]
-                [:= membership:generation-id [:bind generation-id]]
-                [:not-exists
-                 [:select [1]
-                          :from [:as jmap-mailbox mailbox]
-                          :where [:and
-                                  [:= mailbox:account-id membership:account-id]
-                                  [:= mailbox:remote-mailbox-id
-                                      membership:remote-mailbox-id]
-                                  [:= mailbox:is-available 1]
-                                  [:= mailbox:may-read-items 1]]]]]]))
+       :from [:as jmap-email-generation-mailbox membership]
+       :where
+       [:and
+        [:= membership:account-id [:bind account-id]]
+        [:= membership:generation-id [:bind generation-id]]
+        [:not-exists
+         [:select [1]
+          :from [:as jmap-mailbox mailbox]
+          :where [:and
+                  [:= mailbox:account-id membership:account-id]
+                  [:= mailbox:remote-mailbox-id
+                      membership:remote-mailbox-id]
+                  [:= mailbox:is-available 1]
+                  [:= mailbox:may-read-items 1]]]]]]))
    0))
 
 (defun chidu-store-sqlite--building-generation-p
@@ -565,13 +565,13 @@ active generation.  The value is (NEXT-ORDINAL NEW-LOCAL-EMAIL-IDS)."
    (car
     (chidu-sql-select database
       [:select [1]
-               :from jmap-email-generation
-               :where [:and
-                       [:= account-id [:bind account-id]]
-                       [:= generation-id [:bind generation-id]]
-                       [:= lifecycle [:literal "building"]]
-                       [:= profile-version [:bind profile]]]
-               :limit 1]))
+       :from jmap-email-generation
+       :where [:and
+               [:= account-id [:bind account-id]]
+               [:= generation-id [:bind generation-id]]
+               [:= lifecycle [:literal "building"]]
+               [:= profile-version [:bind profile]]]
+       :limit 1]))
    t))
 
 (defun chidu-store-sqlite--activation-readiness-failure
@@ -616,29 +616,29 @@ EXPECTED-REVISION fences the checkpoint transition."
              (chidu-store-sqlite--increment-change-seq database)))
         (chidu-sql-execute database
           [:update jmap-email-generation
-                   :set [[lifecycle [:literal "retired"]]]
-                   :where [:and
-                           [:= account-id [:bind account-id]]
-                           [:= lifecycle [:literal "active"]]]])
+           :set [[lifecycle [:literal "retired"]]]
+           :where [:and
+                   [:= account-id [:bind account-id]]
+                   [:= lifecycle [:literal "active"]]]])
         (chidu-sql-execute database
           [:update jmap-email-generation
-                   :set [[lifecycle [:literal "active"]]]
-                   :where [:and
-                           [:= account-id [:bind account-id]]
-                           [:= generation-id [:bind generation-id]]
-                           [:= lifecycle [:literal "building"]]]])
+           :set [[lifecycle [:literal "active"]]]
+           :where [:and
+                   [:= account-id [:bind account-id]]
+                   [:= generation-id [:bind generation-id]]
+                   [:= lifecycle [:literal "building"]]]])
         (chidu-sql-execute database
           [:update jmap-email-checkpoint
-                   :set
-                   [[phase [:literal "live"]]
-                    [query-state nil]
-                    [can-calculate-changes nil]
-                    [committed-count [:bind member-count]]
-                    [anchor-remote-email-id nil]
-                    [hydration-after-local-email-id nil]
-                    [revision [:bind (1+ expected-revision)]]
-                    [observed-change-seq [:bind change-seq]]]
-                   :where [:= account-id [:bind account-id]]])))
+           :set
+           [[phase [:literal "live"]]
+            [query-state nil]
+            [can-calculate-changes nil]
+            [committed-count [:bind member-count]]
+            [anchor-remote-email-id nil]
+            [hydration-after-local-email-id nil]
+            [revision [:bind (1+ expected-revision)]]
+            [observed-change-seq [:bind change-seq]]]
+           :where [:= account-id [:bind account-id]]])))
     (chidu-store-sqlite--email-context state account-id)))
 
 (defun chidu-store-sqlite--activate-email-generation (state operation)

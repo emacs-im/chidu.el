@@ -260,11 +260,11 @@ MAX-OBJECTS-IN-SET]'."
 (defun chidu-jmap--identity-request (account-id)
   "Return bounded Identity/get request for ACCOUNT-ID."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-submission-capability]
-           :methodCalls
-           [["Identity/get"
-             (:accountId ,account-id
-                         :properties ["id" "name" "email" "mayDelete"])
-             "identity-get"]]))
+    :methodCalls
+    [["Identity/get"
+      (:accountId ,account-id
+       :properties ["id" "name" "email" "mayDelete"])
+      "identity-get"]]))
 
 (defun chidu-jmap--validate-identities (bytes account-id)
   "Validate Identity/get JSON BYTES for ACCOUNT-ID.
@@ -499,7 +499,7 @@ cancellation function, or nil if DELIVER was called synchronously."
             (unless (chidu-jmap-discovery-completed-p discovery)
               (setf (chidu-jmap-discovery-canceled-p discovery) t)
               (when-let* ((request
-                           (chidu-jmap-discovery-active-request discovery)))
+                            (chidu-jmap-discovery-active-request discovery)))
                 (chidu-jmap-http-cancel request))
               (chidu-jmap--finish-discovery
                discovery

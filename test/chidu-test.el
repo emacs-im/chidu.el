@@ -468,8 +468,7 @@
               (should (eq 'idle (chidu--account-ui-state-phase ui)))
               (should
                (eq mailbox-context
-                   (chidu--account-ui-state-mailbox-context ui)))
-              )))
+                   (chidu--account-ui-state-mailbox-context ui))))))
       (when runtime (chidu-runtime-close runtime)))))
 
 (ert-deftest chidu-email-live-sync-never-starts-an-initial-index ()

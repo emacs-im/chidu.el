@@ -53,7 +53,7 @@ Do not wait for network responses or timers.  Fail if work does not settle."
   "Encode one JMAP METHOD response with CALL-ID and ARGUMENTS."
   (chidu-store-test--payload
    `(:sessionState "session"
-                   :methodResponses [[,method ,arguments ,call-id]])))
+     :methodResponses [[,method ,arguments ,call-id]])))
 
 (defun chidu-store-test--store-call (store operation)
   "Synchronously invoke STORE OPERATION in a unit test."

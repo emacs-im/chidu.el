@@ -74,23 +74,23 @@
     (puthash "inbox" t mailboxes)
     (puthash "$seen" t keywords)
     (let* ((request
-            (chidu-jmap-email-hydration--request
-             "remote-account" 'full (vector "email-1" "email-2")))
+             (chidu-jmap-email-hydration--request
+              "remote-account" 'full (vector "email-1" "email-2")))
            (arguments (aref (aref (plist-get request :methodCalls) 0) 1))
            (bytes
             (chidu-store-test--method-response
              "Email/get" "email-hydration"
              `(:accountId "remote-account" :state "email-1"
-                          :list
-                          [(:id "email-1" :blobId "blob-email-1"
-                                :threadId "thread-email-1"
-                                :mailboxIds ,mailboxes :keywords ,keywords :size 42
-                                :receivedAt "2026-08-26T12:00:00Z"
-                                :from [(:name "Alice" :email "alice@example.test")]
-                                :subject "Subject email-1"
-                                :messageId ["mid-email-1"]
-                                :hasAttachment :json-false)]
-                          :notFound ["email-2"])))
+               :list
+               [(:id "email-1" :blobId "blob-email-1"
+                 :threadId "thread-email-1"
+                 :mailboxIds ,mailboxes :keywords ,keywords :size 42
+                 :receivedAt "2026-08-26T12:00:00Z"
+                 :from [(:name "Alice" :email "alice@example.test")]
+                 :subject "Subject email-1"
+                 :messageId ["mid-email-1"]
+                 :hasAttachment :json-false)]
+               :notFound ["email-2"])))
            (observation
             (chidu-jmap-email-hydration--decode
              bytes "remote-account" 'full
@@ -120,16 +120,16 @@
              :kind 'mutable
              :targets (vector (aref targets 0))))
            (request
-            (chidu-jmap-email-hydration--request
-             "remote-account" 'mutable (vector "email-1")))
+             (chidu-jmap-email-hydration--request
+              "remote-account" 'mutable (vector "email-1")))
            (arguments (aref (aref (plist-get request :methodCalls) 0) 1))
            (bytes
             (chidu-store-test--method-response
              "Email/get" "email-hydration"
              `(:accountId "remote-account" :state "email-2"
-                          :list [(:id "email-1" :mailboxIds ,mailboxes
-                                      :keywords ,keywords)]
-                          :notFound [])))
+               :list [(:id "email-1" :mailboxIds ,mailboxes
+                       :keywords ,keywords)]
+               :notFound [])))
            (result
             (aref
              (chidu-store-email-hydration-observation-results

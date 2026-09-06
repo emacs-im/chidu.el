@@ -782,7 +782,7 @@ This is a view-local Dired-style marker edit and performs no server mutation."
    'chidu-search-email-id
    (apply-partially #'chidu-search--request-sync surface nil)
    #'chidu-search-next #'chidu-search-previous)
-  
+
   (appkit-projection-renderer-create
    :project-all (lambda (_surface _app model)
                   (chidu-search--project-rows model))

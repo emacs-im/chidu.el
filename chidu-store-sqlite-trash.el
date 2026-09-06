@@ -113,10 +113,10 @@ Return a typed result whose value is a list of `(local-id . remote-id)' pairs."
      (caar
       (chidu-sql-select database
         [:select [remote-email-id]
-                 :from jmap-email-record
-                 :where [:and
-                         [:= account-id [:bind account-id]]
-                         [:= local-email-id [:bind local-email-id]]]]))
+         :from jmap-email-record
+         :where [:and
+                 [:= account-id [:bind account-id]]
+                 [:= local-email-id [:bind local-email-id]]]]))
      do
      (if remote-email-id
          (push (cons local-email-id remote-email-id) targets)
@@ -139,25 +139,25 @@ ACCOUNT-ID owns OPERATION-ID and TRASH-MAILBOX-ID."
            (chidu-store-sqlite--increment-change-seq database)))
       (chidu-sql-execute database
         [:insert :into jmap-trash-operation
-                 :row
-                 [[operation-id [:bind operation-id]]
-                  [account-id [:bind account-id]]
-                  [trash-mailbox-id [:bind trash-mailbox-id]]
-                  [accepted-change-seq [:bind change-seq]]
-                  [updated-change-seq [:bind change-seq]]]])
+         :row
+         [[operation-id [:bind operation-id]]
+          [account-id [:bind account-id]]
+          [trash-mailbox-id [:bind trash-mailbox-id]]
+          [accepted-change-seq [:bind change-seq]]
+          [updated-change-seq [:bind change-seq]]]])
       (dolist (target targets)
         (chidu-sql-execute database
           [:insert :into jmap-trash-target
-                   :row
-                   [[operation-id [:bind operation-id]]
-                    [account-id [:bind account-id]]
-                    [local-email-id [:bind (car target)]]
-                    [remote-email-id [:bind (cdr target)]]
-                    [original-mailbox-ids-json nil]
-                    [phase [:literal "pending"]]
-                    [error-kind nil]
-                    [accepted-change-seq [:bind change-seq]]
-                    [updated-change-seq [:bind change-seq]]]])))))
+           :row
+           [[operation-id [:bind operation-id]]
+            [account-id [:bind account-id]]
+            [local-email-id [:bind (car target)]]
+            [remote-email-id [:bind (cdr target)]]
+            [original-mailbox-ids-json nil]
+            [phase [:literal "pending"]]
+            [error-kind nil]
+            [accepted-change-seq [:bind change-seq]]
+            [updated-change-seq [:bind change-seq]]]])))))
 
 (defun chidu-store-sqlite--trash-destination-result
     (database account-id trash-mailbox-id)
@@ -327,17 +327,17 @@ immediately."
             (row
              (chidu-sql-select database
                [:select [query-key]
-                        :distinct t
-                        :from jmap-search-projection-row
-                        :where [:and
-                                [:= account-id [:bind account-id]]
-                                [:= local-email-id [:bind local-id]]]]))
+                :distinct t
+                :from jmap-search-projection-row
+                :where [:and
+                        [:= account-id [:bind account-id]]
+                        [:= local-email-id [:bind local-id]]]]))
           (puthash (car row) t affected-queries))
         (chidu-sql-execute database
           [:delete :from jmap-search-projection-row
-                   :where [:and
-                           [:= account-id [:bind account-id]]
-                           [:= local-email-id [:bind local-id]]]]))
+           :where [:and
+                   [:= account-id [:bind account-id]]
+                   [:= local-email-id [:bind local-id]]]]))
       (maphash
        (lambda (query-key _)
          (chidu-store-sqlite--compact-search-ordinals
@@ -346,11 +346,11 @@ immediately."
       ;; Moving to Trash may remove or add a server-search hit.
       (chidu-sql-execute database
         [:update jmap-search-projection
-                 :set [[is-stale 1]
-                       [maybe-more 0]
-                       [revision [:+ revision 1]]
-                       [observed-change-seq [:bind change-seq]]]
-                 :where [:= account-id [:bind account-id]]]))))
+         :set [[is-stale 1]
+               [maybe-more 0]
+               [revision [:+ revision 1]]
+               [observed-change-seq [:bind change-seq]]]
+         :where [:= account-id [:bind account-id]]]))))
 
 (defun chidu-store-sqlite--trash-target-row
     (database account-id operation-id local-email-id)
@@ -360,11 +360,11 @@ ACCOUNT-ID and OPERATION-ID identify the durable operation."
   (car
    (chidu-sql-select database
      [:select [remote-email-id original-mailbox-ids-json phase]
-              :from jmap-trash-target
-              :where [:and
-                      [:= account-id [:bind account-id]]
-                      [:= operation-id [:bind operation-id]]
-                      [:= local-email-id [:bind local-email-id]]]])))
+      :from jmap-trash-target
+      :where [:and
+              [:= account-id [:bind account-id]]
+              [:= operation-id [:bind operation-id]]
+              [:= local-email-id [:bind local-email-id]]]])))
 
 (defun chidu-store-sqlite--trash-stale-evidence-local-id
     (database account-id operation-id evidence)
@@ -426,13 +426,13 @@ where either side may be nil."
           (progn
             (chidu-sql-execute database
               [:update jmap-trash-target
-                       :set [[phase [:literal "unknown"]]
-                             [error-kind [:literal "notFound"]]
-                             [updated-change-seq [:bind change-seq]]]
-                       :where [:and
-                               [:= account-id [:bind account-id]]
-                               [:= operation-id [:bind operation-id]]
-                               [:= local-email-id [:bind local-id]]]])
+               :set [[phase [:literal "unknown"]]
+                     [error-kind [:literal "notFound"]]
+                     [updated-change-seq [:bind change-seq]]]
+               :where [:and
+                       [:= account-id [:bind account-id]]
+                       [:= operation-id [:bind operation-id]]
+                       [:= local-email-id [:bind local-id]]]])
             (cons
              (chidu-store-sqlite--trash-change
               local-id 'unknown "notFound")
@@ -461,20 +461,20 @@ where either side may be nil."
      (t
       (chidu-sql-execute database
         [:update jmap-trash-target
-                 :set
-                 [[original-mailbox-ids-json
-                   [:call
-                    coalesce original-mailbox-ids-json
-                    [:bind
-                     (chidu-store-sqlite--string-vector-json
-                      remote-mailbox-ids "Trash original Mailbox ids")]]]
-                  [phase [:literal "pending"]]
-                  [error-kind nil]
-                  [updated-change-seq [:bind change-seq]]]
-                 :where [:and
-                         [:= account-id [:bind account-id]]
-                         [:= operation-id [:bind operation-id]]
-                         [:= local-email-id [:bind local-id]]]])
+         :set
+         [[original-mailbox-ids-json
+           [:call
+            coalesce original-mailbox-ids-json
+            [:bind
+             (chidu-store-sqlite--string-vector-json
+              remote-mailbox-ids "Trash original Mailbox ids")]]]
+          [phase [:literal "pending"]]
+          [error-kind nil]
+          [updated-change-seq [:bind change-seq]]]
+         :where [:and
+                 [:= account-id [:bind account-id]]
+                 [:= operation-id [:bind operation-id]]
+                 [:= local-email-id [:bind local-id]]]])
       nil))))
 
 (defun chidu-store-sqlite--finish-trash-operation
@@ -484,17 +484,17 @@ where either side may be nil."
       (car
        (chidu-sql-select database
          [:select [1]
-                  :from jmap-trash-target
-                  :where [:and
-                          [:= account-id [:bind account-id]]
-                          [:= operation-id [:bind operation-id]]]
-                  :limit 1]))
+          :from jmap-trash-target
+          :where [:and
+                  [:= account-id [:bind account-id]]
+                  [:= operation-id [:bind operation-id]]]
+          :limit 1]))
       (chidu-sql-execute database
         [:update jmap-trash-operation
-                 :set [[updated-change-seq [:bind change-seq]]]
-                 :where [:and
-                         [:= account-id [:bind account-id]]
-                         [:= operation-id [:bind operation-id]]]])
+         :set [[updated-change-seq [:bind change-seq]]]
+         :where [:and
+                 [:= account-id [:bind account-id]]
+                 [:= operation-id [:bind operation-id]]]])
     (chidu-sql-execute database
       [:delete
        :from jmap-trash-operation
@@ -631,13 +631,13 @@ nil."
       ('unknown
        (chidu-sql-execute database
          [:update jmap-trash-target
-                  :set [[phase [:literal "unknown"]]
-                        [error-kind [:bind error-kind]]
-                        [updated-change-seq [:bind change-seq]]]
-                  :where [:and
-                          [:= account-id [:bind account-id]]
-                          [:= operation-id [:bind operation-id]]
-                          [:= local-email-id [:bind local-id]]]])
+          :set [[phase [:literal "unknown"]]
+                [error-kind [:bind error-kind]]
+                [updated-change-seq [:bind change-seq]]]
+          :where [:and
+                  [:= account-id [:bind account-id]]
+                  [:= operation-id [:bind operation-id]]
+                  [:= local-email-id [:bind local-id]]]])
        (cons
         (chidu-store-sqlite--trash-change
          local-id 'unknown error-kind)

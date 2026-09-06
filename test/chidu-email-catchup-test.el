@@ -143,8 +143,8 @@ defaults to Inbox."
   (let* ((created (vector "created"))
          (updated (vector "updated"))
          (request
-          (chidu-jmap-email-catchup--request
-           "remote-account" created updated))
+           (chidu-jmap-email-catchup--request
+            "remote-account" created updated))
          (calls (plist-get request :methodCalls))
          (mailboxes (make-hash-table :test #'equal))
          (keywords (make-hash-table :test #'equal)))
@@ -160,26 +160,26 @@ defaults to Inbox."
     (let* ((bytes
             (chidu-store-test--payload
              `(:sessionState "session"
-                             :methodResponses
-                             [["Email/get"
-                               (:accountId "remote-account" :state "e3"
-                                           :list
-                                           [(:id "created" :blobId "blob-created"
-                                                 :threadId "thread-created"
-                                                 :mailboxIds ,mailboxes :keywords ,keywords :size 42
-                                                 :receivedAt "2026-08-26T12:00:00Z"
-                                                 :from [(:name "Alice" :email "alice@example.test")]
-                                                 :subject "Subject created"
-                                                 :messageId ["mid-created"]
-                                                 :hasAttachment :json-false)]
-                                           :notFound [])
-                               "email-catchup-created"]
-                              ["Email/get"
-                               (:accountId "remote-account" :state "e2"
-                                           :list [(:id "updated" :mailboxIds ,mailboxes
-                                                       :keywords ,keywords)]
-                                           :notFound [])
-                               "email-catchup-updated"]])))
+               :methodResponses
+               [["Email/get"
+                 (:accountId "remote-account" :state "e3"
+                  :list
+                  [(:id "created" :blobId "blob-created"
+                    :threadId "thread-created"
+                    :mailboxIds ,mailboxes :keywords ,keywords :size 42
+                    :receivedAt "2026-08-26T12:00:00Z"
+                    :from [(:name "Alice" :email "alice@example.test")]
+                    :subject "Subject created"
+                    :messageId ["mid-created"]
+                    :hasAttachment :json-false)]
+                  :notFound [])
+                 "email-catchup-created"]
+                ["Email/get"
+                 (:accountId "remote-account" :state "e2"
+                  :list [(:id "updated" :mailboxIds ,mailboxes
+                          :keywords ,keywords)]
+                  :notFound [])
+                 "email-catchup-updated"]])))
            (decoded
             (chidu-jmap-email-catchup--decode
              bytes "remote-account" created updated))

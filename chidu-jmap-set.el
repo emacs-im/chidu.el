@@ -237,10 +237,10 @@ map."
   (unless (and (hash-table-p updates) (> (hash-table-count updates) 0))
     (signal 'chidu-jmap-error '("Set update requires a nonempty update map")))
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/set"
-             (:accountId ,remote-account-id :update ,updates)
-             ,call-id]]))
+    :methodCalls
+    [["Email/set"
+      (:accountId ,remote-account-id :update ,updates)
+      ,call-id]]))
 
 (defun chidu-jmap-set-update-request-size
     (remote-account-id call-id updates)

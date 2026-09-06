@@ -619,7 +619,7 @@ mutation; `chidu-summary-execute-trash-flags' is the separate commit step."
    'chidu-summary-email-id
    (apply-partially #'chidu-summary--request-sync surface nil)
    #'chidu-summary-next #'chidu-summary-previous)
-  
+
   (appkit-projection-renderer-create
    :project-all (lambda (_surface _app model)
                   (chidu-summary--project-rows model))

@@ -122,13 +122,13 @@
   (setq remote-account-id
         (chidu-jmap--id remote-account-id "contacts Account id"))
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-contacts-capability]
-           :methodCalls
-           [["AddressBook/get"
-             (:accountId ,remote-account-id
-                         :properties
-                         ["id" "name" "description" "sortOrder" "isDefault"
-                          "isSubscribed" "myRights"])
-             "addressbook-get"]]))
+    :methodCalls
+    [["AddressBook/get"
+      (:accountId ,remote-account-id
+       :properties
+       ["id" "name" "description" "sortOrder" "isDefault"
+        "isSubscribed" "myRights"])
+      "addressbook-get"]]))
 
 (defun chidu-jmap-contact-validate-address-books-response
     (bytes remote-account-id)
@@ -208,14 +208,14 @@ cards, and ANCHOR-ID resumes after a prior page when non-nil."
             (list :position 0))
           (list :limit limit :calculateTotal t))))
     `(:using [,chidu-jmap-core-capability ,chidu-jmap-contacts-capability]
-             :methodCalls
-             [["ContactCard/query" ,arguments "contact-query"]
-              ["ContactCard/get"
-               (:accountId ,remote-account-id
-                           ,(intern ":#ids")
-                           (:resultOf "contact-query" :name "ContactCard/query" :path "/ids")
-                           :properties ,chidu-jmap-contact-summary-properties)
-               "contact-get"]])))
+      :methodCalls
+      [["ContactCard/query" ,arguments "contact-query"]
+       ["ContactCard/get"
+        (:accountId ,remote-account-id
+         ,(intern ":#ids")
+         (:resultOf "contact-query" :name "ContactCard/query" :path "/ids")
+         :properties ,chidu-jmap-contact-summary-properties)
+        "contact-get"]])))
 
 (defun chidu-jmap-contact--method-error-type (bytes call-id)
   "Return method error type for CALL-ID in BYTES, or nil."
@@ -371,12 +371,12 @@ REMOTE-ACCOUNT-ID, QUERY, and LIMIT are exact request evidence."
         remote-contact-id
         (chidu-jmap--id remote-contact-id "ContactCard id"))
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-contacts-capability]
-           :methodCalls
-           [["ContactCard/get"
-             (:accountId ,remote-account-id
-                         :ids [,remote-contact-id]
-                         :properties ,chidu-jmap-contact-detail-properties)
-             "contact-detail"]]))
+    :methodCalls
+    [["ContactCard/get"
+      (:accountId ,remote-account-id
+       :ids [,remote-contact-id]
+       :properties ,chidu-jmap-contact-detail-properties)
+      "contact-detail"]]))
 
 (defun chidu-jmap-contact-validate-detail-response
     (bytes remote-account-id remote-contact-id)
@@ -431,18 +431,18 @@ REMOTE-ACCOUNT-ID, QUERY, and LIMIT are exact request evidence."
            :sort [(:property "updated" :isAscending :json-false)]
            :position 0 :limit query-limit))))
     `(:using [,chidu-jmap-core-capability ,chidu-jmap-contacts-capability]
-             :methodCalls
-             [["AddressBook/get"
-               (:accountId ,remote-account-id
-                           :properties ["id" "isSubscribed" "myRights"])
-               "addressbook-get"]
-              ["ContactCard/query" ,query-arguments "contact-query"]
-              ["ContactCard/get"
-               (:accountId ,remote-account-id
-                           ,(intern ":#ids")
-                           (:resultOf "contact-query" :name "ContactCard/query" :path "/ids")
-                           :properties ,chidu-jmap-contact-summary-properties)
-               "contact-get"]])))
+      :methodCalls
+      [["AddressBook/get"
+        (:accountId ,remote-account-id
+         :properties ["id" "isSubscribed" "myRights"])
+        "addressbook-get"]
+       ["ContactCard/query" ,query-arguments "contact-query"]
+       ["ContactCard/get"
+        (:accountId ,remote-account-id
+         ,(intern ":#ids")
+         (:resultOf "contact-query" :name "ContactCard/query" :path "/ids")
+         :properties ,chidu-jmap-contact-summary-properties)
+        "contact-get"]])))
 
 (defun chidu-jmap-contact--visible-address-book-ids (arguments)
   "Return subscribed readable AddressBook ids from get ARGUMENTS."

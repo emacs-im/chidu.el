@@ -259,10 +259,10 @@ Return `(EMAIL-STATE . ROWS-BY-ID)'.  ROWS-BY-ID maps each returned id to
 (defun chidu-jmap-email--state-request (remote-account-id)
   "Return an Email/get request that observes REMOTE-ACCOUNT-ID state only."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/get"
-             (:accountId ,remote-account-id :ids [] :properties ["id"])
-             "email-state"]]))
+    :methodCalls
+    [["Email/get"
+      (:accountId ,remote-account-id :ids [] :properties ["id"])
+      "email-state"]]))
 
 (defun chidu-jmap-email--validate-state (bytes remote-account-id)
   "Validate Email/get state-only BYTES for REMOTE-ACCOUNT-ID."
@@ -289,12 +289,12 @@ Return `(EMAIL-STATE . ROWS-BY-ID)'.  ROWS-BY-ID maps each returned id to
     (remote-account-id remote-email-ids)
   "Return REMOTE-ACCOUNT-ID Email/get request for REMOTE-EMAIL-IDS."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/get"
-             (:accountId ,remote-account-id
-                         :ids ,remote-email-ids
-                         :properties ["id" "mailboxIds" "keywords"])
-             "email-mutable"]]))
+    :methodCalls
+    [["Email/get"
+      (:accountId ,remote-account-id
+       :ids ,remote-email-ids
+       :properties ["id" "mailboxIds" "keywords"])
+      "email-mutable"]]))
 
 (defun chidu-jmap-email-mutable-request-size (account remote-email-ids)
   "Return encoded mutable Email/get size for ACCOUNT and REMOTE-EMAIL-IDS."
@@ -403,18 +403,18 @@ Return `(EMAIL-STATE . ROWS-BY-ID)'.  ROWS-BY-ID maps each returned id to
 Use ANCHOR-REMOTE-EMAIL-ID with anchorOffset 1 when non-nil; otherwise start
 at position zero.  LIMIT bounds the returned id page."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/query"
-             (:accountId ,remote-account-id
-                         :filter :json-null
-                         :sort :json-null
-                         :collapseThreads :json-false
-                         :calculateTotal :json-false
-                         :limit ,limit
-                         ,@(if anchor-remote-email-id
-                               `(:anchor ,anchor-remote-email-id :anchorOffset 1)
-                             '(:position 0)))
-             "email-query"]]))
+    :methodCalls
+    [["Email/query"
+      (:accountId ,remote-account-id
+       :filter :json-null
+       :sort :json-null
+       :collapseThreads :json-false
+       :calculateTotal :json-false
+       :limit ,limit
+       ,@(if anchor-remote-email-id
+             `(:anchor ,anchor-remote-email-id :anchorOffset 1)
+           '(:position 0)))
+      "email-query"]]))
 
 (defun chidu-jmap-email--decode-query-page-arguments
     (arguments requested-limit &optional calculate-total-p)

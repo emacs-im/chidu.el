@@ -47,16 +47,16 @@
 
 BODY-VALUE-BYTE-LIMIT bounds each decoded part."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/get"
-             (:accountId ,remote-account-id
-                         :ids [,remote-email-id]
-                         :properties ,chidu-jmap-body-properties
-                         :bodyProperties ,chidu-jmap-body-part-properties
-                         :fetchTextBodyValues t
-                         :fetchHTMLBodyValues t
-                         :maxBodyValueBytes ,body-value-byte-limit)
-             "email-body"]]))
+    :methodCalls
+    [["Email/get"
+      (:accountId ,remote-account-id
+       :ids [,remote-email-id]
+       :properties ,chidu-jmap-body-properties
+       :bodyProperties ,chidu-jmap-body-part-properties
+       :fetchTextBodyValues t
+       :fetchHTMLBodyValues t
+       :maxBodyValueBytes ,body-value-byte-limit)
+      "email-body"]]))
 
 (defun chidu-jmap-body--value (wire part-id)
   "Validate body value WIRE for PART-ID and return a small plist."

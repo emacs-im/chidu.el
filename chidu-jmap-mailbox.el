@@ -38,15 +38,15 @@
 (defun chidu-jmap--mailbox-request (remote-account-id)
   "Return bounded Mailbox/get request for REMOTE-ACCOUNT-ID."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Mailbox/get"
-             (:accountId ,remote-account-id
-                         :ids :json-null
-                         :properties
-                         ["id" "name" "parentId" "role" "sortOrder"
-                          "totalEmails" "unreadEmails" "totalThreads" "unreadThreads"
-                          "myRights" "isSubscribed"])
-             "mailbox-get"]]))
+    :methodCalls
+    [["Mailbox/get"
+      (:accountId ,remote-account-id
+       :ids :json-null
+       :properties
+       ["id" "name" "parentId" "role" "sortOrder"
+        "totalEmails" "unreadEmails" "totalThreads" "unreadThreads"
+        "myRights" "isSubscribed"])
+      "mailbox-get"]]))
 
 (defun chidu-jmap--mailbox-rights (wire)
   "Validate Mailbox rights object WIRE."
@@ -318,7 +318,7 @@ failed and DELIVER was called synchronously."
             (unless (chidu-jmap-mailbox-fetch-completed-p fetch)
               (setf (chidu-jmap-mailbox-fetch-canceled-p fetch) t)
               (when-let* ((request
-                           (chidu-jmap-mailbox-fetch-request fetch)))
+                            (chidu-jmap-mailbox-fetch-request fetch)))
                 (chidu-jmap-http-cancel request))
               (chidu-jmap--finish-mailbox-fetch
                fetch

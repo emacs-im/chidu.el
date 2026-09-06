@@ -17,22 +17,22 @@
 (defconst chidu-store-sqlite--metadata-query
   (chidu-sql
    [:select [store-id change-seq]
-            :from store-metadata
-            :where [:= singleton 1]])
+    :from store-metadata
+    :where [:= singleton 1]])
   "Read the sole Store metadata row.")
 
 (defconst chidu-store-sqlite--change-seq-query
   (chidu-sql
    [:select [change-seq]
-            :from store-metadata
-            :where [:= singleton 1]])
+    :from store-metadata
+    :where [:= singleton 1]])
   "Read the Store change sequence.")
 
 (defconst chidu-store-sqlite--increment-change-seq-statement
   (chidu-sql
    [:update store-metadata
-            :set [[change-seq [:+ change-seq 1]]]
-            :where [:= singleton 1]])
+    :set [[change-seq [:+ change-seq 1]]]
+    :where [:= singleton 1]])
   "Increment the Store change sequence.")
 
 (cl-defstruct (chidu-store-sqlite-state
@@ -298,18 +298,18 @@ Use CHANGE-SEQ when creating the identity."
   (or (caar
        (chidu-sql-select database
          [:select [local-email-id]
-                  :from jmap-email-record
-                  :where [:and
-                          [:= account-id [:bind account-id]]
-                          [:= remote-email-id [:bind remote-email-id]]]]))
+          :from jmap-email-record
+          :where [:and
+                  [:= account-id [:bind account-id]]
+                  [:= remote-email-id [:bind remote-email-id]]]]))
       (let ((local-id (chidu-store-new-local-id)))
         (chidu-sql-execute database
           [:insert :into jmap-email-record
-                   :row
-                   [[local-email-id [:bind local-id]]
-                    [account-id [:bind account-id]]
-                    [remote-email-id [:bind remote-email-id]]
-                    [created-change-seq [:bind change-seq]]]])
+           :row
+           [[local-email-id [:bind local-id]]
+            [account-id [:bind account-id]]
+            [remote-email-id [:bind remote-email-id]]
+            [created-change-seq [:bind change-seq]]]])
         local-id)))
 
 (defun chidu-store-sqlite--runtime (state)

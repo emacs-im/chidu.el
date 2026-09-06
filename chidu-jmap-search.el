@@ -47,30 +47,30 @@ zero.  Email/get and SearchSnippet/get consume the exact query ids by result
 reference."
   (let ((filter (chidu-search-spec-filter spec)))
     `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-             :methodCalls
-             [["Email/query"
-               (:accountId ,remote-account-id
-                           :filter ,filter
-                           :sort [(:property "receivedAt" :isAscending :json-false)]
-                           :collapseThreads :json-false
-                           :calculateTotal :json-false
-                           :limit ,limit
-                           ,@(if anchor
-                                 `(:anchor ,anchor :anchorOffset 1)
-                               '(:position 0)))
-               "search-query"]
-              ["Email/get"
-               (:accountId ,remote-account-id
-                           ,(intern ":#ids")
-                           (:resultOf "search-query" :name "Email/query" :path "/ids")
-                           :properties ,chidu-jmap-search-properties)
-               "search-email"]
-              ["SearchSnippet/get"
-               (:accountId ,remote-account-id
-                           :filter ,filter
-                           ,(intern ":#emailIds")
-                           (:resultOf "search-query" :name "Email/query" :path "/ids"))
-               "search-snippet"]])))
+      :methodCalls
+      [["Email/query"
+        (:accountId ,remote-account-id
+         :filter ,filter
+         :sort [(:property "receivedAt" :isAscending :json-false)]
+         :collapseThreads :json-false
+         :calculateTotal :json-false
+         :limit ,limit
+         ,@(if anchor
+               `(:anchor ,anchor :anchorOffset 1)
+             '(:position 0)))
+        "search-query"]
+       ["Email/get"
+        (:accountId ,remote-account-id
+         ,(intern ":#ids")
+         (:resultOf "search-query" :name "Email/query" :path "/ids")
+         :properties ,chidu-jmap-search-properties)
+        "search-email"]
+       ["SearchSnippet/get"
+        (:accountId ,remote-account-id
+         :filter ,filter
+         ,(intern ":#emailIds")
+         (:resultOf "search-query" :name "Email/query" :path "/ids"))
+        "search-snippet"]])))
 
 (defun chidu-jmap-search--nullable-snippet-text (value context)
   "Return nullable SearchSnippet text VALUE for CONTEXT."

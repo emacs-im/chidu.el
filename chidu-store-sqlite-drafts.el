@@ -26,12 +26,12 @@
     (dolist (row
              (chidu-sql-select database
                [:select [workspace-id phase]
-                        :from chidu-draft-publish-attempt
-                        :where [:and
-                                [:= account-id [:bind account-id]]
-                                [:in phase
-                                     [[:literal "pending"] [:literal "unknown"]]]]
-                        :order-by [[created-change-seq :asc] [attempt-id :asc]]]))
+                :from chidu-draft-publish-attempt
+                :where [:and
+                        [:= account-id [:bind account-id]]
+                        [:in phase
+                             [[:literal "pending"] [:literal "unknown"]]]]
+                :order-by [[created-change-seq :asc] [attempt-id :asc]]]))
       (pcase-let ((`(,workspace-id ,phase) row))
         (when (gethash workspace-id phases)
           (signal 'chidu-invariant-error
@@ -88,23 +88,23 @@ Account's Drafts Mailbox."
          :from [:as jmap-email-generation-mailbox membership]
          :joins
          [[:inner [:as jmap-email-generation-keyword draft]
-                  :on [:and
-                       [:= draft:account-id membership:account-id]
-                       [:= draft:generation-id membership:generation-id]
-                       [:= draft:local-email-id membership:local-email-id]
-                       [:= draft:keyword [:literal "$draft"]]]]
+           :on [:and
+                [:= draft:account-id membership:account-id]
+                [:= draft:generation-id membership:generation-id]
+                [:= draft:local-email-id membership:local-email-id]
+                [:= draft:keyword [:literal "$draft"]]]]
           [:inner [:as jmap-email-record email]
-                  :on [:and
-                       [:= email:account-id membership:account-id]
-                       [:= email:local-email-id membership:local-email-id]]]
+           :on [:and
+                [:= email:account-id membership:account-id]
+                [:= email:local-email-id membership:local-email-id]]]
           [:inner [:as jmap-email-metadata metadata]
-                  :on [:and
-                       [:= metadata:account-id membership:account-id]
-                       [:= metadata:local-email-id membership:local-email-id]]]
+           :on [:and
+                [:= metadata:account-id membership:account-id]
+                [:= metadata:local-email-id membership:local-email-id]]]
           [:left [:as jmap-email-preview preview]
-                 :on [:and
-                      [:= preview:account-id membership:account-id]
-                      [:= preview:local-email-id membership:local-email-id]]]]
+           :on [:and
+                [:= preview:account-id membership:account-id]
+                [:= preview:local-email-id membership:local-email-id]]]]
          :where [:and
                  [:= membership:account-id [:bind account-id]]
                  [:= membership:generation-id [:bind generation-id]]
@@ -140,36 +140,36 @@ ACCOUNT-ID, GENERATION-ID, MAILBOX, LOCAL-EMAIL-ID, and REMOTE-EMAIL-ID supply
 the required identity evidence."
   (chidu-sql-one database
       [:select [[present 1]]
-               :from [:as jmap-email-generation-member member]
-               :joins
-               [[:inner [:as jmap-email-record email]
-                        :on [:and
-                             [:= email:account-id member:account-id]
-                             [:= email:local-email-id member:local-email-id]]]]
-               :where
-               [:and
-                [:= member:account-id [:bind account-id]]
-                [:= member:generation-id [:bind generation-id]]
-                [:= member:local-email-id [:bind local-email-id]]
-                [:= email:remote-email-id [:bind remote-email-id]]
-                [:exists
-                 [:select [1]
-                          :from [:as jmap-email-generation-mailbox membership]
-                          :where [:and
-                                  [:= membership:account-id member:account-id]
-                                  [:= membership:generation-id member:generation-id]
-                                  [:= membership:local-email-id member:local-email-id]
-                                  [:= membership:remote-mailbox-id
-                                      [:bind (chidu-store-mailbox-remote-mailbox-id mailbox)]]]]]
-                [:exists
-                 [:select [1]
-                          :from [:as jmap-email-generation-keyword keyword]
-                          :where [:and
-                                  [:= keyword:account-id member:account-id]
-                                  [:= keyword:generation-id member:generation-id]
-                                  [:= keyword:local-email-id member:local-email-id]
-                                  [:= keyword:keyword [:literal "$draft"]]]]]]
-               :limit 1]
+       :from [:as jmap-email-generation-member member]
+       :joins
+       [[:inner [:as jmap-email-record email]
+         :on [:and
+              [:= email:account-id member:account-id]
+              [:= email:local-email-id member:local-email-id]]]]
+       :where
+       [:and
+        [:= member:account-id [:bind account-id]]
+        [:= member:generation-id [:bind generation-id]]
+        [:= member:local-email-id [:bind local-email-id]]
+        [:= email:remote-email-id [:bind remote-email-id]]
+        [:exists
+         [:select [1]
+          :from [:as jmap-email-generation-mailbox membership]
+          :where [:and
+                  [:= membership:account-id member:account-id]
+                  [:= membership:generation-id member:generation-id]
+                  [:= membership:local-email-id member:local-email-id]
+                  [:= membership:remote-mailbox-id
+                      [:bind (chidu-store-mailbox-remote-mailbox-id mailbox)]]]]]
+        [:exists
+         [:select [1]
+          :from [:as jmap-email-generation-keyword keyword]
+          :where [:and
+                  [:= keyword:account-id member:account-id]
+                  [:= keyword:generation-id member:generation-id]
+                  [:= keyword:local-email-id member:local-email-id]
+                  [:= keyword:keyword [:literal "$draft"]]]]]]
+       :limit 1]
     present))
 
 (defun chidu-store-sqlite--drafts-context

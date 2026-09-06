@@ -830,22 +830,22 @@ Refresh remotely when REFRESH-EMPTY-P and CONTEXT has no revision."
           (chidu-conversation-state-message state) nil)
     (chidu-conversation--request-sync it)
     (chidu-surface-operation-start it 'conversation
-                                (lambda
-                                  (runtime success-function
-                                           error-function)
-                                  (chidu-refresh-conversation
-                                   runtime
-                                   (chidu-conversation-state-account
+                                   (lambda
+                                     (runtime success-function
+                                              error-function)
+                                     (chidu-refresh-conversation
+                                      runtime
+                                      (chidu-conversation-state-account
+                                       state)
+                                      (chidu-conversation-state-remote-thread-id
+                                       state)
+                                      success-function error-function))
+                                   (apply-partially
+                                    #'chidu-conversation--refreshed it
                                     state)
-                                   (chidu-conversation-state-remote-thread-id
-                                    state)
-                                   success-function error-function))
-                                (apply-partially
-                                 #'chidu-conversation--refreshed it
-                                 state)
-                                (apply-partially
-                                 #'chidu-conversation--failed it
-                                 state))))
+                                   (apply-partially
+                                    #'chidu-conversation--failed it
+                                    state))))
 
 (defun chidu-conversation--load-local (view &optional refresh-empty-p)
   "Load VIEW's local projection and refresh when REFRESH-EMPTY-P."

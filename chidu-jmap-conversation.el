@@ -44,21 +44,21 @@
     (remote-account-id remote-thread-id)
   "Return Thread/get request for REMOTE-THREAD-ID in REMOTE-ACCOUNT-ID."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Thread/get"
-             (:accountId ,remote-account-id :ids [,remote-thread-id])
-             "conversation-thread"]]))
+    :methodCalls
+    [["Thread/get"
+      (:accountId ,remote-account-id :ids [,remote-thread-id])
+      "conversation-thread"]]))
 
 (defun chidu-jmap-conversation--email-request
     (remote-account-id remote-email-ids)
   "Return Email/get request for REMOTE-EMAIL-IDS in REMOTE-ACCOUNT-ID."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/get"
-             (:accountId ,remote-account-id
-                         :ids ,remote-email-ids
-                         :properties ,chidu-jmap-conversation-properties)
-             "conversation-email"]]))
+    :methodCalls
+    [["Email/get"
+      (:accountId ,remote-account-id
+       :ids ,remote-email-ids
+       :properties ,chidu-jmap-conversation-properties)
+      "conversation-email"]]))
 
 (defun chidu-jmap-conversation--id-vector (wire context)
   "Validate unique JMAP Id vector WIRE for CONTEXT."
@@ -379,7 +379,7 @@ synchronous startup failure."
         (unless (chidu-jmap-conversation-fetch-completed-p fetch)
           (setf (chidu-jmap-conversation-fetch-canceled-p fetch) t)
           (when-let* ((request
-                       (chidu-jmap-conversation-fetch-request fetch)))
+                        (chidu-jmap-conversation-fetch-request fetch)))
             (chidu-jmap-http-cancel request))
           (chidu-jmap-conversation--finish
            fetch

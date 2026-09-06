@@ -195,22 +195,22 @@
          (state-bytes
           (chidu-store-test--payload
            '(:sessionState "session"
-                           :methodResponses
-                           [["Email/get"
-                             (:accountId "remote-account" :state "email-0"
-                                         :list [] :notFound [])
-                             "email-state"]])))
+             :methodResponses
+             [["Email/get"
+               (:accountId "remote-account" :state "email-0"
+                :list [] :notFound [])
+               "email-state"]])))
          (query-bytes
           (chidu-store-test--payload
            '(:sessionState "session"
-                           :methodResponses
-                           [["Email/query"
-                             (:accountId "remote-account"
-                                         :queryState "query-1"
-                                         :canCalculateChanges t
-                                         :position 0
-                                         :ids ["email-1" "email-2"])
-                             "email-query"]])))
+             :methodResponses
+             [["Email/query"
+               (:accountId "remote-account"
+                :queryState "query-1"
+                :canCalculateChanges t
+                :position 0
+                :ids ["email-1" "email-2"])
+               "email-query"]])))
          (page
           (chidu-jmap-email--validate-query-page
            query-bytes "remote-account" 2)))
@@ -232,18 +232,18 @@
 
 (ert-deftest chidu-jmap-email-changes-normalizes-overlap-and-errors ()
   (let* ((request
-          (chidu-jmap-email-changes--request
-           "remote-account" "email/state:0" 10))
+           (chidu-jmap-email-changes--request
+            "remote-account" "email/state:0" 10))
          (arguments (aref (aref (plist-get request :methodCalls) 0) 1))
          (bytes
           (chidu-store-test--method-response
            "Email/changes" "email-changes"
            '(:accountId "remote-account"
-                        :oldState "email/state:0" :newState "email/state:1"
-                        :hasMoreChanges t
-                        :created ["email-1" "email-2"]
-                        :updated ["email-2" "email-3" "email-4"]
-                        :destroyed ["email-2" "email-4"])))
+             :oldState "email/state:0" :newState "email/state:1"
+             :hasMoreChanges t
+             :created ["email-1" "email-2"]
+             :updated ["email-2" "email-3" "email-4"]
+             :destroyed ["email-2" "email-4"])))
          (page
           (chidu-jmap-email-changes--decode
            bytes "remote-account" "email/state:0" 10))
@@ -251,8 +251,8 @@
           (chidu-jmap-email-changes--decode
            (chidu-store-test--payload
             '(:sessionState "session"
-                            :methodResponses
-                            [["error" (:type "cannotCalculateChanges") "email-changes"]]))
+              :methodResponses
+              [["error" (:type "cannotCalculateChanges") "email-changes"]]))
            "remote-account" "email/state:old" 10)))
     (should (equal "email/state:0" (plist-get arguments :sinceState)))
     (should (= 10 (plist-get arguments :maxChanges)))
@@ -310,11 +310,11 @@
         (keywords (make-hash-table :test #'equal)))
     (puthash "1"
              '(:value "Full plain body"
-                      :isEncodingProblem :json-false :isTruncated :json-false)
+               :isEncodingProblem :json-false :isTruncated :json-false)
              body-values)
     (puthash "2"
              '(:value "<p>Full HTML body</p>"
-                      :isEncodingProblem :json-false :isTruncated t)
+               :isEncodingProblem :json-false :isTruncated t)
              body-values)
     (puthash "inbox" t mailbox-ids)
     (puthash "$flagged" t keywords)
@@ -322,15 +322,15 @@
         ((email-wire
            (id message-id reply references)
            `(:id ,id :threadId "thread-1"
-                 :mailboxIds ,mailbox-ids :keywords ,keywords
-                 :receivedAt "2026-08-25T01:02:03Z" :sentAt :json-null
-                 :from [(:name :json-null
-                               :email ,(concat id "@example.test"))]
-                 :subject ,id :preview ,(concat "preview-" id)
-                 :hasAttachment :json-false
-                 :messageId [,message-id]
-                 :inReplyTo ,(if reply (vector reply) :json-null)
-                 :references ,(vconcat references))))
+             :mailboxIds ,mailbox-ids :keywords ,keywords
+             :receivedAt "2026-08-25T01:02:03Z" :sentAt :json-null
+             :from [(:name :json-null
+                     :email ,(concat id "@example.test"))]
+             :subject ,id :preview ,(concat "preview-" id)
+             :hasAttachment :json-false
+             :messageId [,message-id]
+             :inReplyTo ,(if reply (vector reply) :json-null)
+             :references ,(vconcat references))))
       (let* ((body-request
               (chidu-jmap-body--request "remote-account" "email-2" 4096))
              (body-arguments
@@ -340,44 +340,44 @@
                (chidu-store-test--method-response
                 "Email/get" "email-body"
                 `(:accountId "remote-account" :state "body/state:1"
-                             :list
-                             [(:id "email-2" :bodyValues ,body-values
-                                   :textBody [(:partId "1" :type "text/plain")]
-                                   :htmlBody [(:partId "2" :type "text/html")]
-                                   :attachments
-                                   [(:partId "3" :blobId "blob-image" :size 128
-                                             :name "diagram.png" :type "image/png"
-                                             :charset :json-null :disposition "inline"
-                                             :cid "diagram@example.test" :language ["en"]
-                                             :location "images/diagram.png")
-                                    (:partId "4" :blobId "blob-pdf" :size 4096
-                                             :name "report.pdf" :type "application/pdf"
-                                             :charset :json-null :disposition "attachment"
-                                             :cid :json-null :language :json-null
-                                             :location :json-null)])]
-                             :notFound []))
+                  :list
+                  [(:id "email-2" :bodyValues ,body-values
+                    :textBody [(:partId "1" :type "text/plain")]
+                    :htmlBody [(:partId "2" :type "text/html")]
+                    :attachments
+                    [(:partId "3" :blobId "blob-image" :size 128
+                      :name "diagram.png" :type "image/png"
+                      :charset :json-null :disposition "inline"
+                      :cid "diagram@example.test" :language ["en"]
+                      :location "images/diagram.png")
+                     (:partId "4" :blobId "blob-pdf" :size 4096
+                      :name "report.pdf" :type "application/pdf"
+                      :charset :json-null :disposition "attachment"
+                      :cid :json-null :language :json-null
+                      :location :json-null)])]
+                  :notFound []))
                "remote-account" "email-2"))
              (thread
               (chidu-jmap-conversation--validate-thread
                (chidu-store-test--method-response
                 "Thread/get" "conversation-thread"
                 '(:accountId "remote-account" :state "thread/state:1"
-                             :list
-                             [(:id "thread-1"
-                                   :emailIds ["email-1" "email-2" "email-3"])]
-                             :notFound []))
+                  :list
+                  [(:id "thread-1"
+                    :emailIds ["email-1" "email-2" "email-3"])]
+                  :notFound []))
                "remote-account" "thread-1" 8))
              (conversation
               (chidu-jmap-conversation--validate-emails
                (chidu-store-test--method-response
                 "Email/get" "conversation-email"
                 `(:accountId "remote-account"
-                             :state "email/state:conversation"
-                             :list
-                             [,(email-wire "email-3" "m3" "missing" '("m1" "m2"))
-                              ,(email-wire "email-1" "m1" nil nil)
-                              ,(email-wire "email-2" "m2" "m1" '("m1"))]
-                             :notFound []))
+                  :state "email/state:conversation"
+                  :list
+                  [,(email-wire "email-3" "m3" "missing" '("m1" "m2"))
+                   ,(email-wire "email-1" "m1" nil nil)
+                   ,(email-wire "email-2" "m2" "m1" '("m1"))]
+                  :notFound []))
                "remote-account" "thread-1" (cdr thread) (car thread)))
              (tree
               (chidu-store-materialize-conversation-rows
@@ -508,44 +508,44 @@
              (or primary-account-id remote-id) primary)
     (chidu-store-test--payload
      `(:capabilities ,capabilities
-                     :accounts ,accounts
-                     :primaryAccounts ,primary
-                     :username "me@example.test"
-                     :apiUrl "https://mail.example.test/jmap/api"
-                     :downloadUrl
-                     "https://mail.example.test/jmap/download/{accountId}/{blobId}/{name}?type={type}"
-                     :uploadUrl "https://mail.example.test/jmap/upload/{accountId}"
-                     :eventSourceUrl
-                     "https://mail.example.test/jmap/eventsource/?types={types}"
-                     :state "session-state"))))
+       :accounts ,accounts
+       :primaryAccounts ,primary
+       :username "me@example.test"
+       :apiUrl "https://mail.example.test/jmap/api"
+       :downloadUrl
+       "https://mail.example.test/jmap/download/{accountId}/{blobId}/{name}?type={type}"
+       :uploadUrl "https://mail.example.test/jmap/upload/{accountId}"
+       :eventSourceUrl
+       "https://mail.example.test/jmap/eventsource/?types={types}"
+       :state "session-state"))))
 
 (defun chidu-store-test--identity-response-bytes (identity-id)
   "Return one fake Identity/get response using IDENTITY-ID."
   (chidu-store-test--payload
    `(:sessionState "session-state"
-                   :methodResponses
-                   [["Identity/get"
-                     (:accountId "remote-account"
-                                 :state "identity-state"
-                                 :list
-                                 [(:id ,identity-id
-                                       :name "Me"
-                                       :email "me@example.test"
-                                       :mayDelete :json-false)]
-                                 :notFound [])
-                     "identity-get"]])))
+     :methodResponses
+     [["Identity/get"
+       (:accountId "remote-account"
+        :state "identity-state"
+        :list
+        [(:id ,identity-id
+          :name "Me"
+          :email "me@example.test"
+          :mayDelete :json-false)]
+        :notFound [])
+       "identity-get"]])))
 
 (ert-deftest chidu-jmap-single-response-enforces-envelope-once ()
   (let ((wrong-call
          (chidu-store-test--payload
           '(:sessionState "session-state"
-                          :methodResponses
-                          [["Identity/get"
-                            (:accountId "remote-account"
-                                        :state "identity-state"
-                                        :list []
-                                        :notFound [])
-                            "wrong-call"]]))))
+            :methodResponses
+            [["Identity/get"
+              (:accountId "remote-account"
+               :state "identity-state"
+               :list []
+               :notFound [])
+              "wrong-call"]]))))
     (should-error
      (chidu-jmap-parse-single-method-response
       wrong-call "Identity/get" "identity-get" "remote-account")
@@ -553,8 +553,8 @@
   (let ((method-error
          (chidu-store-test--payload
           '(:sessionState "session-state"
-                          :methodResponses
-                          [["error" (:type "accountNotFound") "identity-get"]]))))
+            :methodResponses
+            [["error" (:type "accountNotFound") "identity-get"]]))))
     (should-error
      (chidu-jmap-parse-single-method-response
       method-error "Identity/get" "identity-get" "remote-account")
@@ -759,9 +759,9 @@
     (should-not (chidu-store-identity-available-p third-identity))
     (should (equal "4" (chidu-store-runtime-change-seq runtime)))
     `(:endpoint-id ,endpoint-id
-                   :account-id ,account-id
-                   :identity-id ,identity-id
-                   :store-id ,(chidu-store-runtime-store-id runtime))))
+      :account-id ,account-id
+      :identity-id ,identity-id
+      :store-id ,(chidu-store-runtime-store-id runtime))))
 
 (ert-deftest chidu-store-sqlite-matches-visibility-and-survives-reopen ()
   (skip-unless (sqlite-available-p))
@@ -991,11 +991,11 @@ PROPERTIES may override parent, role, counts, rights, and subscription."
         (should-not (chidu-store-mailbox-available-p retained-child))
         (should (= 9 (chidu-store-mailbox-total-emails new-inbox)))
         `(:account-id ,account-id
-                      :inbox-id ,inbox-id
-                      :child-id ,child-id
-                      :state ,(chidu-store-mailbox-sync-context-state second)
-                      :revision
-                      ,(chidu-store-mailbox-sync-context-revision second))))))
+          :inbox-id ,inbox-id
+          :child-id ,child-id
+          :state ,(chidu-store-mailbox-sync-context-state second)
+          :revision
+          ,(chidu-store-mailbox-sync-context-revision second))))))
 
 (ert-deftest chidu-store-sqlite-mailbox-snapshot-survives-reopen ()
   (skip-unless (sqlite-available-p))
@@ -1063,13 +1063,13 @@ PROPERTIES may override parent, role, counts, rights, and subscription."
   "Return encoded Mailbox/get response containing MAILBOXES vector."
   (chidu-store-test--payload
    `(:sessionState "session-2"
-                   :methodResponses
-                   [["Mailbox/get"
-                     (:accountId "remote-account"
-                                 :state "mailbox-state"
-                                 :list ,mailboxes
-                                 :notFound [])
-                     "mailbox-get"]])))
+     :methodResponses
+     [["Mailbox/get"
+       (:accountId "remote-account"
+        :state "mailbox-state"
+        :list ,mailboxes
+        :notFound [])
+       "mailbox-get"]])))
 
 (ert-deftest chidu-jmap-mailbox-validates-complete-snapshot ()
   (let* ((observation
@@ -1253,8 +1253,8 @@ PROPERTIES may override parent, role, counts, rights, and subscription."
                     context)))
     (should (= 5 (chidu-store-email-sync-context-revision context)))
     `(:account-id ,account-id
-                  :generation-id
-                  ,(chidu-store-email-sync-context-generation-id context))))
+      :generation-id
+      ,(chidu-store-email-sync-context-generation-id context))))
 
 (ert-deftest chidu-store-email-query-baseline-survives-reopen ()
   (when (sqlite-available-p)
@@ -1832,9 +1832,9 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
     (should (eq 'revision-conflict
                 (chidu-result-failure-kind conflict)))
     `(:account-id ,account-id
-                  :query-key ,query-key
-                  :local-email-id
-                  ,(chidu-store-email-summary-row-local-email-id summary))))
+      :query-key ,query-key
+      :local-email-id
+      ,(chidu-store-email-summary-row-local-email-id summary))))
 
 (ert-deftest chidu-search-query-jmap-and-store-form-one-closed-contract ()
   (let* ((mailbox
@@ -1849,7 +1849,7 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
           (chidu-search-query-compile
            "from:alice is:unread emoji width" (vector mailbox) mailbox))
          (request
-          (chidu-jmap-search--request "remote-account" spec 1))
+           (chidu-jmap-search--request "remote-account" spec 1))
          (next-request
           (chidu-jmap-search--request
            "remote-account" spec 2 "email-1"))
@@ -1868,32 +1868,32 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
            (bytes
             (chidu-store-test--payload
              `(:sessionState "session"
-                             :methodResponses
-                             [["Email/query"
-                               (:accountId "remote-account"
-                                           :queryState "search/query:1"
-                                           :canCalculateChanges t
-                                           :position 0 :ids ["email-1"])
-                               "search-query"]
-                              ["Email/get"
-                               (:accountId "remote-account" :state "email/state:search"
-                                           :list
-                                           [(:id "email-1" :threadId "thread-1"
-                                                 :mailboxIds ,mailboxes :keywords ,keywords
-                                                 :receivedAt "2026-08-25T01:02:03Z"
-                                                 :from [(:name "Alice" :email "alice@example.test")]
-                                                 :subject "Emoji width" :preview "ordinary preview"
-                                                 :hasAttachment :json-false)]
-                                           :notFound [])
-                               "search-email"]
-                              ["SearchSnippet/get"
-                               (:accountId "remote-account"
-                                           :list
-                                           [(:emailId "email-1"
-                                                      :subject "<mark>Emoji</mark> width"
-                                                      :preview "... <mark>emoji</mark> width ...")]
-                                           :notFound :json-null)
-                               "search-snippet"]])))
+               :methodResponses
+               [["Email/query"
+                 (:accountId "remote-account"
+                  :queryState "search/query:1"
+                  :canCalculateChanges t
+                  :position 0 :ids ["email-1"])
+                 "search-query"]
+                ["Email/get"
+                 (:accountId "remote-account" :state "email/state:search"
+                  :list
+                  [(:id "email-1" :threadId "thread-1"
+                    :mailboxIds ,mailboxes :keywords ,keywords
+                    :receivedAt "2026-08-25T01:02:03Z"
+                    :from [(:name "Alice" :email "alice@example.test")]
+                    :subject "Emoji width" :preview "ordinary preview"
+                    :hasAttachment :json-false)]
+                  :notFound [])
+                 "search-email"]
+                ["SearchSnippet/get"
+                 (:accountId "remote-account"
+                  :list
+                  [(:emailId "email-1"
+                    :subject "<mark>Emoji</mark> width"
+                    :preview "... <mark>emoji</mark> width ...")]
+                  :notFound :json-null)
+                 "search-snippet"]])))
            (observation
             (chidu-jmap-search--decode bytes "remote-account" spec 1)))
       (should (equal "AND" (plist-get filter :operator)))
@@ -2070,8 +2070,8 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
               ;; The wire request patches only $seen, and response coverage is
               ;; exact for the requested Email.
               (let* ((request
-                      (chidu-jmap-seen--request
-                       "remote-account" "email-1" t))
+                       (chidu-jmap-seen--request
+                        "remote-account" "email-1" t))
                      (arguments (aref (aref (plist-get request :methodCalls) 0) 1))
                      (update (plist-get arguments :update))
                      (patch (gethash "email-1" update))
@@ -2108,7 +2108,7 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
                         "Email/set" "seen-set"
                         ;; Deployed Stalwart omits an empty `notUpdated'.
                         `(:accountId "remote-account" :oldState "e0" :newState "e1"
-                                     :updated ,updated))
+                          :updated ,updated))
                        "remote-account" "email-1"))))
                 (should
                  (eq 'rejected
@@ -2118,9 +2118,9 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
                         "Email/set" "seen-set"
                         ;; It likewise omits an empty `updated' on error.
                         `(:accountId "remote-account" :oldState "e1" :newState "e1"
-                                     :notUpdated ,not-updated))
+                          :notUpdated ,not-updated))
                        "remote-account" "email-1")))))
-              
+
               ;; Accepting a manual mark-read is immediately visible through
               ;; every projection, but the durable base row is not yet changed.
               (let ((change (chidu-result-ok-value
@@ -2131,7 +2131,7 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
               (should-not (search-unread-p))
               (should-not (conversation-unread-p))
               (should (= 1 (length (intents))))
-              
+
               ;; A newer explicit command supersedes the old operation.  A late
               ;; response for the old command is fenced by operation identity.
               (let ((change (chidu-result-ok-value
@@ -2147,7 +2147,7 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
                 (should (eq 'unknown
                             (chidu-store-seen-change-phase unknown)))
                 (should (chidu-store-seen-change-unread-p unknown)))
-              
+
               ;; Unknown delivery survives restart and remains an optimistic
               ;; overlay until the same idempotent intent is retried.
               (chidu-store-close store)
@@ -2162,7 +2162,7 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
                     (chidu-result-ok-value
                      (settle unread-operation 'succeeded)))))
               (should (= 0 (length (intents))))
-              
+
               ;; Rejection rolls the optimistic state back; success makes it
               ;; the durable projection state after the intent is removed.
               (let ((operation (chidu-store-new-local-id)))
@@ -2254,8 +2254,8 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
            :source-mailbox source :destination-mailbox destination
            :intents intents))
          (request
-          (chidu-jmap-mailbox-move--request
-           "remote-account" "inbox" "archive" intents))
+           (chidu-jmap-mailbox-move--request
+            "remote-account" "inbox" "archive" intents))
          (arguments (aref (aref (plist-get request :methodCalls) 0) 1))
          (updates (plist-get arguments :update))
          (updated (make-hash-table :test #'equal))
@@ -2281,7 +2281,7 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
              (chidu-store-test--method-response
               "Email/set" "mailbox-move"
               `(:accountId "remote-account" :oldState "e0" :newState "e1"
-                           :updated ,updated :notUpdated ,not-updated))
+                :updated ,updated :notUpdated ,not-updated))
              "Email/set" "mailbox-move" "remote-account"
              (vector "email-1" "email-2")))
            (targets (chidu-jmap-set-update-response-results response)))
@@ -2314,7 +2314,7 @@ with it, so a shrinking attachment list leaves no orphan rows behind."
       (chidu-store-test--method-response
        "Email/set" "mailbox-move"
        `(:accountId "remote-account" :oldState "e0" :newState "e1"
-                    :updated ,updated))
+         :updated ,updated))
       "Email/set" "mailbox-move" "remote-account"
       (vector "email-1" "email-2"))
      :type 'chidu-jmap-error)))

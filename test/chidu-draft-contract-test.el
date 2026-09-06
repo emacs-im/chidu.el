@@ -320,8 +320,8 @@ attachment.  NULL-SUBJECT-P omits Subject and returns JSON null."
 (ert-deftest chidu-jmap-draft-checkout-builds-editable-snapshot ()
   "Strict wire observation should project to one closed editable snapshot."
   (let* ((request
-          (chidu-jmap-draft-checkout-request
-           "remote-account" "draft-remote"))
+           (chidu-jmap-draft-checkout-request
+            "remote-account" "draft-remote"))
          (arguments (aref (aref (plist-get request :methodCalls) 0) 1))
          (properties (plist-get arguments :properties))
          (body-properties (plist-get arguments :bodyProperties))

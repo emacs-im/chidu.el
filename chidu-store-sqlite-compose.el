@@ -95,9 +95,9 @@
   "Decode one SQLite Compose workspace ROW."
   (pcase-let
       ((`(,workspace-id ,account-id ,identity-id ,kind
-                        ,to-value ,cc-value ,bcc-value ,reply-to-value
-                        ,subject ,body ,resource-ids-json ,base-remote-email-id
-                        ,base-remote-blob-id ,published-revision ,revision)
+          ,to-value ,cc-value ,bcc-value ,reply-to-value
+          ,subject ,body ,resource-ids-json ,base-remote-email-id
+          ,base-remote-blob-id ,published-revision ,revision)
         row))
     (chidu-store-sqlite--make-compose-row
      :workspace-id workspace-id
@@ -163,29 +163,29 @@ BASE-REMOTE-BLOB-ID, PUBLISHED-REVISION, and REVISION are validated."
          (chidu-store-sqlite--increment-change-seq database)))
     (chidu-sql-execute database
       [:insert :into chidu-compose-workspace
-               :row
-               [[workspace-id [:bind workspace-id]]
-                [account-id [:bind account-id]]
-                [identity-id [:bind identity-id]]
-                [kind [:bind (symbol-name kind)]]
-                [to-value [:bind (chidu-store-compose-document-to document)]]
-                [cc-value [:bind (chidu-store-compose-document-cc document)]]
-                [bcc-value [:bind (chidu-store-compose-document-bcc document)]]
-                [reply-to-value
-                 [:bind (chidu-store-compose-document-reply-to document)]]
-                [subject [:bind (chidu-store-compose-document-subject document)]]
-                [body [:bind (chidu-store-compose-document-body document)]]
-                [resource-ids-json
-                 [:bind
-                  (chidu-store-sqlite--string-vector-json
-                   (chidu-store-compose-document-resource-ids document)
-                   "Compose document resource ids")]]
-                [base-remote-email-id [:bind base-remote-email-id]]
-                [base-remote-blob-id [:bind base-remote-blob-id]]
-                [published-revision [:bind published-revision]]
-                [revision [:bind revision]]
-                [created-change-seq [:bind change-seq]]
-                [updated-change-seq [:bind change-seq]]]])
+       :row
+       [[workspace-id [:bind workspace-id]]
+        [account-id [:bind account-id]]
+        [identity-id [:bind identity-id]]
+        [kind [:bind (symbol-name kind)]]
+        [to-value [:bind (chidu-store-compose-document-to document)]]
+        [cc-value [:bind (chidu-store-compose-document-cc document)]]
+        [bcc-value [:bind (chidu-store-compose-document-bcc document)]]
+        [reply-to-value
+         [:bind (chidu-store-compose-document-reply-to document)]]
+        [subject [:bind (chidu-store-compose-document-subject document)]]
+        [body [:bind (chidu-store-compose-document-body document)]]
+        [resource-ids-json
+         [:bind
+          (chidu-store-sqlite--string-vector-json
+           (chidu-store-compose-document-resource-ids document)
+           "Compose document resource ids")]]
+        [base-remote-email-id [:bind base-remote-email-id]]
+        [base-remote-blob-id [:bind base-remote-blob-id]]
+        [published-revision [:bind published-revision]]
+        [revision [:bind revision]]
+        [created-change-seq [:bind change-seq]]
+        [updated-change-seq [:bind change-seq]]]])
     change-seq))
 
 (defun chidu-store-sqlite--compose-drafts-mailbox (database account-id)
@@ -484,10 +484,10 @@ available.  Return nil when ownership is valid."
         (chidu-store-sqlite--increment-change-seq database)
         (chidu-sql-execute database
           [:delete :from chidu-compose-workspace
-                   :where
-                   [:and
-                    [:= workspace-id [:bind workspace-id]]
-                    [:= revision [:bind expected]]]]))
+           :where
+           [:and
+            [:= workspace-id [:bind workspace-id]]
+            [:= revision [:bind expected]]]]))
       (chidu-result-ok-create :value workspace-id)))))
 
 (provide 'chidu-store-sqlite-compose)

@@ -28,8 +28,8 @@
   "Decode one persisted Compose resource ROW."
   (pcase-let
       ((`(,resource-id ,workspace-id ,name ,media-type ,size ,digest
-                       ,remote-blob-id ,charset ,disposition ,cid
-                       ,language-json ,location)
+          ,remote-blob-id ,charset ,disposition ,cid
+          ,language-json ,location)
         row))
     (chidu-store-compose-resource-create
      :resource-id resource-id
@@ -220,37 +220,37 @@ return a typed failure unless every resource has a confirmed JMAP Blob id."
   "Insert RESOURCE below WORKSPACE-ID in DATABASE at CHANGE-SEQ."
   (chidu-sql-execute database
     [:insert :into chidu-compose-resource
-             :row
-             [[resource-id
-               [:bind
-                (chidu-store-compose-resource-observation-resource-id resource)]]
-              [workspace-id [:bind workspace-id]]
-              [name
-               [:bind (chidu-store-compose-resource-observation-name resource)]]
-              [media-type
-               [:bind
-                (chidu-store-compose-resource-observation-media-type resource)]]
-              [size [:bind (chidu-store-compose-resource-observation-size resource)]]
-              [digest
-               [:bind (chidu-store-compose-resource-observation-digest resource)]]
-              [remote-blob-id
-               [:bind
-                (chidu-store-compose-resource-observation-remote-blob-id resource)]]
-              [charset
-               [:bind (chidu-store-compose-resource-observation-charset resource)]]
-              [disposition
-               [:bind
-                (chidu-store-compose-resource-observation-disposition resource)]]
-              [cid [:bind (chidu-store-compose-resource-observation-cid resource)]]
-              [language-json
-               [:bind
-                (chidu-store-sqlite--string-vector-json
-                 (chidu-store-compose-resource-observation-language resource)
-                 "Compose resource language")]]
-              [location
-               [:bind (chidu-store-compose-resource-observation-location resource)]]
-              [created-change-seq [:bind change-seq]]
-              [updated-change-seq [:bind change-seq]]]]))
+     :row
+     [[resource-id
+       [:bind
+        (chidu-store-compose-resource-observation-resource-id resource)]]
+      [workspace-id [:bind workspace-id]]
+      [name
+       [:bind (chidu-store-compose-resource-observation-name resource)]]
+      [media-type
+       [:bind
+        (chidu-store-compose-resource-observation-media-type resource)]]
+      [size [:bind (chidu-store-compose-resource-observation-size resource)]]
+      [digest
+       [:bind (chidu-store-compose-resource-observation-digest resource)]]
+      [remote-blob-id
+       [:bind
+        (chidu-store-compose-resource-observation-remote-blob-id resource)]]
+      [charset
+       [:bind (chidu-store-compose-resource-observation-charset resource)]]
+      [disposition
+       [:bind
+        (chidu-store-compose-resource-observation-disposition resource)]]
+      [cid [:bind (chidu-store-compose-resource-observation-cid resource)]]
+      [language-json
+       [:bind
+        (chidu-store-sqlite--string-vector-json
+         (chidu-store-compose-resource-observation-language resource)
+         "Compose resource language")]]
+      [location
+       [:bind (chidu-store-compose-resource-observation-location resource)]]
+      [created-change-seq [:bind change-seq]]
+      [updated-change-seq [:bind change-seq]]]]))
 
 (defun chidu-store-sqlite--compose-resource-size-failure
     (database row resource)
@@ -341,27 +341,27 @@ IDENTITY-ID, EXPECTED, REVISION, and DOCUMENT are the captured edit state."
   "Update DATABASE ROW for IDENTITY-ID to REVISION and DOCUMENT at CHANGE-SEQ."
   (chidu-sql-execute database
     [:update chidu-compose-workspace
-             :set
-             [[identity-id [:bind identity-id]]
-              [to-value [:bind (chidu-store-compose-document-to document)]]
-              [cc-value [:bind (chidu-store-compose-document-cc document)]]
-              [bcc-value [:bind (chidu-store-compose-document-bcc document)]]
-              [reply-to-value
-               [:bind (chidu-store-compose-document-reply-to document)]]
-              [subject [:bind (chidu-store-compose-document-subject document)]]
-              [body [:bind (chidu-store-compose-document-body document)]]
-              [resource-ids-json
-               [:bind
-                (chidu-store-sqlite--string-vector-json
-                 (chidu-store-compose-document-resource-ids document)
-                 "Compose document resource ids")]]
-              [revision [:bind revision]]
-              [updated-change-seq [:bind change-seq]]]
-             :where
-             [:and
-              [:= workspace-id
-                  [:bind (chidu-store-sqlite--compose-row-workspace-id row)]]
-              [:= revision [:bind (chidu-store-sqlite--compose-row-revision row)]]]]))
+     :set
+     [[identity-id [:bind identity-id]]
+      [to-value [:bind (chidu-store-compose-document-to document)]]
+      [cc-value [:bind (chidu-store-compose-document-cc document)]]
+      [bcc-value [:bind (chidu-store-compose-document-bcc document)]]
+      [reply-to-value
+       [:bind (chidu-store-compose-document-reply-to document)]]
+      [subject [:bind (chidu-store-compose-document-subject document)]]
+      [body [:bind (chidu-store-compose-document-body document)]]
+      [resource-ids-json
+       [:bind
+        (chidu-store-sqlite--string-vector-json
+         (chidu-store-compose-document-resource-ids document)
+         "Compose document resource ids")]]
+      [revision [:bind revision]]
+      [updated-change-seq [:bind change-seq]]]
+     :where
+     [:and
+      [:= workspace-id
+          [:bind (chidu-store-sqlite--compose-row-workspace-id row)]]
+      [:= revision [:bind (chidu-store-sqlite--compose-row-revision row)]]]]))
 
 (defun chidu-store-sqlite--add-compose-resource (state operation)
   "Atomically add Compose resource OPERATION in SQLite STATE."
@@ -511,9 +511,9 @@ IDENTITY-ID, EXPECTED, REVISION, and DOCUMENT are the captured edit state."
            database row identity-id revision document change-seq)
           (chidu-sql-execute database
             [:delete :from chidu-compose-resource
-                     :where [:and
-                             [:= workspace-id [:bind workspace-id]]
-                             [:= resource-id [:bind resource-id]]]])))
+             :where [:and
+                     [:= workspace-id [:bind workspace-id]]
+                     [:= resource-id [:bind resource-id]]]])))
       (chidu-store-sqlite--compose-context state workspace-id)))))
 
 (defun chidu-store-sqlite--set-compose-resource-blob (state operation)
@@ -552,11 +552,11 @@ IDENTITY-ID, EXPECTED, REVISION, and DOCUMENT are the captured edit state."
                (chidu-store-sqlite--increment-change-seq database)))
           (chidu-sql-execute database
             [:update chidu-compose-resource
-                     :set [[remote-blob-id [:bind remote-blob-id]]
-                           [updated-change-seq [:bind change-seq]]]
-                     :where [:and
-                             [:= workspace-id [:bind workspace-id]]
-                             [:= resource-id [:bind resource-id]]]])))
+             :set [[remote-blob-id [:bind remote-blob-id]]
+                   [updated-change-seq [:bind change-seq]]]
+             :where [:and
+                     [:= workspace-id [:bind workspace-id]]
+                     [:= resource-id [:bind resource-id]]]])))
       (chidu-store-sqlite--compose-context state workspace-id)))))
 
 (provide 'chidu-store-sqlite-compose-resource)

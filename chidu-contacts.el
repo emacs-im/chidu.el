@@ -373,7 +373,7 @@ Signal when PAGE cannot be proven to continue the same ordered result set."
 
 (defun chidu-contacts--renderer (surface)
   "Create the native projection Renderer for SURFACE."
-  
+
   (appkit-projection-renderer-create
    :project-all (lambda (_surface _app model)
                   (chidu-contacts--project-rows model))

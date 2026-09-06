@@ -109,10 +109,10 @@
 
 When nil, leave Evil's initial-state selection untouched."
   :type '(choice (const :tag "Don't override" nil)
-                 (const :tag "Normal" normal)
-                 (const :tag "Motion" motion)
-                 (const :tag "Emacs" emacs)
-                 (symbol :tag "Custom state"))
+          (const :tag "Normal" normal)
+          (const :tag "Motion" motion)
+          (const :tag "Emacs" emacs)
+          (symbol :tag "Custom state"))
   :group 'chidu-evil)
 
 (defconst chidu-evil--application-modes
@@ -178,7 +178,7 @@ surface-specific actions."
     "g j" next-command
     "g k" previous-command
     "o" open-message-command)
-  
+
   ;; These are the standard read-only list semantics used throughout
   ;; evil-collection.  A single mark edit advances; a visual selection applies
   ;; to all intersecting rows.
@@ -196,7 +196,7 @@ surface-specific actions."
     "a" archive-command
     "d" flag-trash-command
     "x" execute-trash-command)
-  
+
   (appkit-evil-define-keys 'visual map
     "?" #'chidu-dispatch
     "m" #'chidu-selection-mark
@@ -212,24 +212,24 @@ surface-specific actions."
   "Install shared and surface-specific Chidu bindings."
   (dolist (map chidu-evil--readonly-maps)
     (appkit-evil-define-readonly-keys map))
-  
+
   (appkit-evil-map
     (:map chidu-home-mode-map
-          :nm
-          "?" #'chidu-dispatch
-          "RET" #'appkit-directory-activate
-          "<return>" #'appkit-directory-activate
-          "TAB" #'appkit-directory-tab-dwim
-          "<tab>" #'appkit-directory-tab-dwim
-          "<backtab>" #'appkit-directory-previous-item
-          "g r" #'chidu-refresh
-          "g R" #'chidu-restart
-          "g s" #'chidu-home-sync-account
-          "g f" #'chidu-search-mail
-          "g a" #'chidu-contacts
-          "g j" #'appkit-directory-next-item
-          "g k" #'appkit-directory-previous-item))
-  
+     :nm
+     "?" #'chidu-dispatch
+     "RET" #'appkit-directory-activate
+     "<return>" #'appkit-directory-activate
+     "TAB" #'appkit-directory-tab-dwim
+     "<tab>" #'appkit-directory-tab-dwim
+     "<backtab>" #'appkit-directory-previous-item
+     "g r" #'chidu-refresh
+     "g R" #'chidu-restart
+     "g s" #'chidu-home-sync-account
+     "g f" #'chidu-search-mail
+     "g a" #'chidu-contacts
+     "g j" #'appkit-directory-next-item
+     "g k" #'appkit-directory-previous-item))
+
   (chidu-evil--define-list-keys
    'chidu-summary-mode-map
    #'chidu-summary-open-conversation
@@ -242,7 +242,7 @@ surface-specific actions."
    #'chidu-summary-execute-trash-flags
    #'chidu-summary-next
    #'chidu-summary-previous)
-  
+
   (chidu-evil--define-list-keys
    'chidu-search-mode-map
    #'chidu-search-open-conversation
@@ -255,77 +255,77 @@ surface-specific actions."
    #'chidu-search-execute-trash-flags
    #'chidu-search-next
    #'chidu-search-previous)
-  
+
   (appkit-evil-map
     (:map chidu-address-books-mode-map
-          :nm
-          "?" #'chidu-dispatch
-          "RET" #'appkit-directory-activate
-          "<return>" #'appkit-directory-activate
-          "TAB" #'appkit-directory-tab-dwim
-          "<tab>" #'appkit-directory-tab-dwim
-          "<backtab>" #'appkit-directory-previous-item
-          "g r" #'chidu-address-books-refresh
-          "g j" #'appkit-directory-next-item
-          "g k" #'appkit-directory-previous-item)
+     :nm
+     "?" #'chidu-dispatch
+     "RET" #'appkit-directory-activate
+     "<return>" #'appkit-directory-activate
+     "TAB" #'appkit-directory-tab-dwim
+     "<tab>" #'appkit-directory-tab-dwim
+     "<backtab>" #'appkit-directory-previous-item
+     "g r" #'chidu-address-books-refresh
+     "g j" #'appkit-directory-next-item
+     "g k" #'appkit-directory-previous-item)
     (:map chidu-contacts-mode-map
-          :nm
-          "?" #'chidu-dispatch
-          "RET" #'chidu-contacts-open-contact
-          "<return>" #'chidu-contacts-open-contact
-          "g r" #'chidu-contacts-refresh
-          "g +" #'chidu-contacts-load-more
-          "g f" #'chidu-contacts-search
-          "g j" #'chidu-contacts-next
-          "g k" #'chidu-contacts-previous
-          "c" #'chidu-contacts-compose)
+     :nm
+     "?" #'chidu-dispatch
+     "RET" #'chidu-contacts-open-contact
+     "<return>" #'chidu-contacts-open-contact
+     "g r" #'chidu-contacts-refresh
+     "g +" #'chidu-contacts-load-more
+     "g f" #'chidu-contacts-search
+     "g j" #'chidu-contacts-next
+     "g k" #'chidu-contacts-previous
+     "c" #'chidu-contacts-compose)
     (:map chidu-contact-view-mode-map
-          :nm
-          "?" #'chidu-dispatch
-          "g r" #'chidu-contact-view-refresh
-          "c" #'chidu-contact-view-compose)
+     :nm
+     "?" #'chidu-dispatch
+     "g r" #'chidu-contact-view-refresh
+     "c" #'chidu-contact-view-compose)
     (:map chidu-drafts-mode-map
-          :nm
-          "?" #'chidu-dispatch
-          "RET" #'chidu-drafts-open-draft
-          "<return>" #'chidu-drafts-open-draft
-          "g r" #'chidu-drafts-refresh
-          "g +" #'chidu-drafts-load-more
-          "g j" #'chidu-drafts-next
-          "g k" #'chidu-drafts-previous)
+     :nm
+     "?" #'chidu-dispatch
+     "RET" #'chidu-drafts-open-draft
+     "<return>" #'chidu-drafts-open-draft
+     "g r" #'chidu-drafts-refresh
+     "g +" #'chidu-drafts-load-more
+     "g j" #'chidu-drafts-next
+     "g k" #'chidu-drafts-previous)
     (:map chidu-conversation-mode-map
-          :nm
-          "?" #'chidu-dispatch
-          "RET" #'chidu-conversation-focus
-          "<return>" #'chidu-conversation-focus
+     :nm
+     "?" #'chidu-dispatch
+     "RET" #'chidu-conversation-focus
+     "<return>" #'chidu-conversation-focus
      ;; Bind only the distinct GUI <tab> event so ordinary TAB/C-i keeps Evil's
      ;; jump-list meaning.  The DWIM checks an exact attachment card before the
      ;; surrounding Email body fold.
-          "<tab>" #'chidu-conversation-evil-tab-dwim
-          "!" #'chidu-mark-read
-          "R" #'chidu-mark-unread
-          "g r" #'chidu-conversation-refresh
-          "g s" #'chidu-toggle-read
-          "g j" #'chidu-conversation-next-entry
-          "g k" #'chidu-conversation-previous-entry
-          "o" #'chidu-conversation-open-standalone
-          :n
-          "z a" #'chidu-conversation-toggle-replies
-          "z c" #'chidu-conversation-close-replies
-          "z o" #'chidu-conversation-open-replies)
+     "<tab>" #'chidu-conversation-evil-tab-dwim
+     "!" #'chidu-mark-read
+     "R" #'chidu-mark-unread
+     "g r" #'chidu-conversation-refresh
+     "g s" #'chidu-toggle-read
+     "g j" #'chidu-conversation-next-entry
+     "g k" #'chidu-conversation-previous-entry
+     "o" #'chidu-conversation-open-standalone
+     :n
+     "z a" #'chidu-conversation-toggle-replies
+     "z c" #'chidu-conversation-close-replies
+     "z o" #'chidu-conversation-open-replies)
     (:map chidu-message-mode-map
-          :nm
-          "?" #'chidu-dispatch
-          "!" #'chidu-mark-read
-          "R" #'chidu-mark-unread
-          "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
-          "g r" #'chidu-message-refresh
-          "g s" #'chidu-toggle-read)
+     :nm
+     "?" #'chidu-dispatch
+     "!" #'chidu-mark-read
+     "R" #'chidu-mark-unread
+     "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
+     "g r" #'chidu-message-refresh
+     "g s" #'chidu-toggle-read)
     (:map chidu-parsed-message-mode-map
-          :nm
-          "?" #'chidu-dispatch
-          "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
-          "g r" #'chidu-parsed-message-refresh)))
+     :nm
+     "?" #'chidu-dispatch
+     "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
+     "g r" #'chidu-parsed-message-refresh)))
 
 (defun chidu-evil--refresh-live-buffers ()
   "Refresh Evil projections in existing Chidu application buffers."

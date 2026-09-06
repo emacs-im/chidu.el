@@ -34,17 +34,17 @@
     (remote-account-id created updated)
   "Return REMOTE-ACCOUNT-ID hydration request for CREATED and UPDATED ids."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           ,(vconcat
-             (delq
-              nil
-              (list
-               (and (> (length created) 0)
-                    (chidu-jmap-email-catchup--method
-                     remote-account-id 'full created "email-catchup-created"))
-               (and (> (length updated) 0)
-                    (chidu-jmap-email-catchup--method
-                     remote-account-id 'mutable updated "email-catchup-updated")))))))
+    :methodCalls
+    ,(vconcat
+      (delq
+       nil
+       (list
+        (and (> (length created) 0)
+             (chidu-jmap-email-catchup--method
+              remote-account-id 'full created "email-catchup-created"))
+        (and (> (length updated) 0)
+             (chidu-jmap-email-catchup--method
+              remote-account-id 'mutable updated "email-catchup-updated")))))))
 
 (defun chidu-jmap-email-catchup--expected
     (remote-account-id created updated)

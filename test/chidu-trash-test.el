@@ -193,8 +193,8 @@
            :operation-id "operation" :trash-mailbox trash
            :intents intents))
          (request
-          (chidu-jmap-trash--request
-           "remote-account" "trash/remote" intents))
+           (chidu-jmap-trash--request
+            "remote-account" "trash/remote" intents))
          (arguments (aref (aref (plist-get request :methodCalls) 0) 1))
          (updates (plist-get arguments :update)))
     (should (= 3 (hash-table-count updates)))

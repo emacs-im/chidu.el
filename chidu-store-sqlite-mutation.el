@@ -26,12 +26,12 @@
     (error "Unsupported unread projection table: %S" table))
   `(chidu-sql-execute ,database
      [:update ,table
-              :set [[is-unread
-                     [:bind
-                      (chidu-store-sqlite--integer-bool ,unread)]]]
-              :where [:and
-                      [:= account-id [:bind ,account-id]]
-                      [:= local-email-id [:bind ,local-email-id]]]]))
+      :set [[is-unread
+             [:bind
+              (chidu-store-sqlite--integer-bool ,unread)]]]
+      :where [:and
+              [:= account-id [:bind ,account-id]]
+              [:= local-email-id [:bind ,local-email-id]]]]))
 
 (defun chidu-store-sqlite--seen-intents (database account-id)
   "Return durable explicit read-state intents from DATABASE for ACCOUNT-ID."
@@ -139,10 +139,10 @@
               (caar
                (chidu-sql-select database
                  [:select [remote-email-id]
-                          :from jmap-email-record
-                          :where [:and
-                                  [:= account-id [:bind account-id]]
-                                  [:= local-email-id [:bind local-email-id]]]])))
+                  :from jmap-email-record
+                  :where [:and
+                          [:= account-id [:bind account-id]]
+                          [:= local-email-id [:bind local-email-id]]]])))
              (existing
               (car
                (chidu-sql-select database
@@ -157,8 +157,8 @@
               (car
                (chidu-sql-select database
                  [:select [account-id local-email-id]
-                          :from jmap-seen-intent
-                          :where [:= operation-id [:bind operation-id]]]))))
+                  :from jmap-seen-intent
+                  :where [:= operation-id [:bind operation-id]]]))))
         (cond
          ((null actual-remote-id)
           (chidu-result-failure-create
@@ -211,24 +211,24 @@
                        (chidu-store-sqlite--increment-change-seq database)))
                   (chidu-sql-execute database
                     [:insert :into jmap-seen-intent
-                             :row
-                             [[account-id [:bind account-id]]
-                              [local-email-id [:bind local-email-id]]
-                              [remote-email-id [:bind remote-email-id] :update]
-                              [operation-id [:bind operation-id] :update]
-                              [desired-seen
-                               [:bind
-                                (chidu-store-sqlite--integer-bool desired-seen-p)]
-                               :update]
-                              [base-unread
-                               [:bind
-                                (chidu-store-sqlite--integer-bool base-unread-p)]
-                               :update]
-                              [phase [:literal "pending"] :update]
-                              [error-kind nil :update]
-                              [accepted-change-seq [:bind change-seq] :update]
-                              [updated-change-seq [:bind change-seq] :update]]
-                             :on-conflict [account-id local-email-id]])))
+                     :row
+                     [[account-id [:bind account-id]]
+                      [local-email-id [:bind local-email-id]]
+                      [remote-email-id [:bind remote-email-id] :update]
+                      [operation-id [:bind operation-id] :update]
+                      [desired-seen
+                       [:bind
+                        (chidu-store-sqlite--integer-bool desired-seen-p)]
+                       :update]
+                      [base-unread
+                       [:bind
+                        (chidu-store-sqlite--integer-bool base-unread-p)]
+                       :update]
+                      [phase [:literal "pending"] :update]
+                      [error-kind nil :update]
+                      [accepted-change-seq [:bind change-seq] :update]
+                      [updated-change-seq [:bind change-seq] :update]]
+                     :on-conflict [account-id local-email-id]])))
               (chidu-result-ok-create
                :value
                (chidu-store-sqlite--seen-change
@@ -322,12 +322,12 @@
                   ('unknown
                    (chidu-sql-execute database
                      [:update jmap-seen-intent
-                              :set [[phase [:literal "unknown"]]
-                                    [error-kind [:bind error-kind]]
-                                    [updated-change-seq [:bind change-seq]]]
-                              :where [:and
-                                      [:= account-id [:bind account-id]]
-                                      [:= local-email-id [:bind local-email-id]]]])))))
+                      :set [[phase [:literal "unknown"]]
+                            [error-kind [:bind error-kind]]
+                            [updated-change-seq [:bind change-seq]]]
+                      :where [:and
+                              [:= account-id [:bind account-id]]
+                              [:= local-email-id [:bind local-email-id]]]])))))
             (chidu-result-ok-create
              :value
              (chidu-store-sqlite--seen-change
@@ -531,10 +531,10 @@
              (caar
               (chidu-sql-select database
                 [:select [remote-email-id]
-                         :from jmap-email-record
-                         :where [:and
-                                 [:= account-id [:bind account-id]]
-                                 [:= local-email-id [:bind local-email-id]]]]))
+                 :from jmap-email-record
+                 :where [:and
+                         [:= account-id [:bind account-id]]
+                         [:= local-email-id [:bind local-email-id]]]]))
              do
              (if remote-email-id
                  (push (cons local-email-id remote-email-id) targets)
@@ -552,25 +552,25 @@
                        (chidu-store-sqlite--increment-change-seq database)))
                   (chidu-sql-execute database
                     [:insert :into jmap-mailbox-move
-                             :row
-                             [[operation-id [:bind operation-id]]
-                              [account-id [:bind account-id]]
-                              [source-mailbox-id [:bind source-mailbox-id]]
-                              [destination-mailbox-id [:bind destination-mailbox-id]]
-                              [accepted-change-seq [:bind change-seq]]
-                              [updated-change-seq [:bind change-seq]]]])
+                     :row
+                     [[operation-id [:bind operation-id]]
+                      [account-id [:bind account-id]]
+                      [source-mailbox-id [:bind source-mailbox-id]]
+                      [destination-mailbox-id [:bind destination-mailbox-id]]
+                      [accepted-change-seq [:bind change-seq]]
+                      [updated-change-seq [:bind change-seq]]]])
                   (dolist (target targets)
                     (chidu-sql-execute database
                       [:insert :into jmap-mailbox-move-target
-                               :row
-                               [[operation-id [:bind operation-id]]
-                                [account-id [:bind account-id]]
-                                [local-email-id [:bind (car target)]]
-                                [remote-email-id [:bind (cdr target)]]
-                                [phase [:literal "pending"]]
-                                [error-kind nil]
-                                [accepted-change-seq [:bind change-seq]]
-                                [updated-change-seq [:bind change-seq]]]]))))
+                       :row
+                       [[operation-id [:bind operation-id]]
+                        [account-id [:bind account-id]]
+                        [local-email-id [:bind (car target)]]
+                        [remote-email-id [:bind (cdr target)]]
+                        [phase [:literal "pending"]]
+                        [error-kind nil]
+                        [accepted-change-seq [:bind change-seq]]
+                        [updated-change-seq [:bind change-seq]]]]))))
               (let* ((context-result
                       (chidu-store-sqlite--mailbox-move-context
                        state account-id))
@@ -634,17 +634,17 @@ immediately."
             (row
              (chidu-sql-select database
                [:select [query-key]
-                        :distinct t
-                        :from jmap-search-projection-row
-                        :where [:and
-                                [:= account-id [:bind account-id]]
-                                [:= local-email-id [:bind local-email-id]]]]))
+                :distinct t
+                :from jmap-search-projection-row
+                :where [:and
+                        [:= account-id [:bind account-id]]
+                        [:= local-email-id [:bind local-email-id]]]]))
           (puthash (car row) t query-keys))
         (chidu-sql-execute database
           [:delete :from jmap-search-projection-row
-                   :where [:and
-                           [:= account-id [:bind account-id]]
-                           [:= local-email-id [:bind local-email-id]]]]))
+           :where [:and
+                   [:= account-id [:bind account-id]]
+                   [:= local-email-id [:bind local-email-id]]]]))
       (maphash
        (lambda (query-key _)
          (chidu-store-sqlite--compact-search-ordinals
@@ -654,11 +654,11 @@ immediately."
       ;; or add a hit, so every materialized query lease becomes stale.
       (chidu-sql-execute database
         [:update jmap-search-projection
-                 :set [[is-stale 1]
-                       [maybe-more 0]
-                       [revision [:+ revision 1]]
-                       [observed-change-seq [:bind change-seq]]]
-                 :where [:= account-id [:bind account-id]]]))))
+         :set [[is-stale 1]
+               [maybe-more 0]
+               [revision [:+ revision 1]]
+               [observed-change-seq [:bind change-seq]]]
+         :where [:= account-id [:bind account-id]]]))))
 
 (defun chidu-store-sqlite--settle-mailbox-move (state operation)
   "Settle explicit Mailbox move OPERATION targets in SQLite STATE."
@@ -701,11 +701,11 @@ immediately."
              (car
               (chidu-sql-select database
                 [:select [1]
-                         :from jmap-mailbox-move-target
-                         :where [:and
-                                 [:= account-id [:bind account-id]]
-                                 [:= operation-id [:bind operation-id]]
-                                 [:= local-email-id [:bind local-id]]]]))
+                 :from jmap-mailbox-move-target
+                 :where [:and
+                         [:= account-id [:bind account-id]]
+                         [:= operation-id [:bind operation-id]]
+                         [:= local-email-id [:bind local-id]]]]))
              do (unless missing-local-id (setq missing-local-id local-id)))
             (if missing-local-id
                 (chidu-result-failure-create
@@ -756,13 +756,13 @@ immediately."
                        ('unknown
                         (chidu-sql-execute database
                           [:update jmap-mailbox-move-target
-                                   :set [[phase [:literal "unknown"]]
-                                         [error-kind [:bind error-kind]]
-                                         [updated-change-seq [:bind change-seq]]]
-                                   :where [:and
-                                           [:= account-id [:bind account-id]]
-                                           [:= operation-id [:bind operation-id]]
-                                           [:= local-email-id [:bind local-id]]]])
+                           :set [[phase [:literal "unknown"]]
+                                 [error-kind [:bind error-kind]]
+                                 [updated-change-seq [:bind change-seq]]]
+                           :where [:and
+                                   [:= account-id [:bind account-id]]
+                                   [:= operation-id [:bind operation-id]]
+                                   [:= local-email-id [:bind local-id]]]])
                         (push
                          (chidu-store-sqlite--mailbox-move-change
                           local-id 'unknown error-kind)
@@ -774,17 +774,17 @@ immediately."
                         (car
                          (chidu-sql-select database
                            [:select [1]
-                                    :from jmap-mailbox-move-target
-                                    :where [:and
-                                            [:= account-id [:bind account-id]]
-                                            [:= operation-id [:bind operation-id]]]
-                                    :limit 1]))
+                            :from jmap-mailbox-move-target
+                            :where [:and
+                                    [:= account-id [:bind account-id]]
+                                    [:= operation-id [:bind operation-id]]]
+                            :limit 1]))
                         (chidu-sql-execute database
                           [:update jmap-mailbox-move
-                                   :set [[updated-change-seq [:bind change-seq]]]
-                                   :where [:and
-                                           [:= account-id [:bind account-id]]
-                                           [:= operation-id [:bind operation-id]]]])
+                           :set [[updated-change-seq [:bind change-seq]]]
+                           :where [:and
+                                   [:= account-id [:bind account-id]]
+                                   [:= operation-id [:bind operation-id]]]])
                       (chidu-sql-execute database
                         [:delete
                          :from jmap-mailbox-move

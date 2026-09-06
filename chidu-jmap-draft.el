@@ -96,32 +96,32 @@ CREATION-ID names EMAIL-OBJECT in the Set request."
   (let ((create (make-hash-table :test #'equal)))
     (puthash creation-id email-object create)
     `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-             :methodCalls
-             [["Email/set"
-               (:accountId ,remote-account-id :create ,create)
-               "draft-create"]])))
+      :methodCalls
+      [["Email/set"
+        (:accountId ,remote-account-id :create ,create)
+        "draft-create"]])))
 
 (defun chidu-jmap-draft-cleanup-get-request
     (remote-account-id remote-email-id)
   "Return REMOTE-ACCOUNT-ID predecessor read for REMOTE-EMAIL-ID."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/get"
-             (:accountId ,remote-account-id
-                         :ids [,remote-email-id]
-                         :properties ["id" "blobId" "mailboxIds" "keywords"])
-             "draft-cleanup-get"]]))
+    :methodCalls
+    [["Email/get"
+      (:accountId ,remote-account-id
+       :ids [,remote-email-id]
+       :properties ["id" "blobId" "mailboxIds" "keywords"])
+      "draft-cleanup-get"]]))
 
 (defun chidu-jmap-draft-cleanup-request
     (remote-account-id remote-email-id state)
   "Return conditional REMOTE-ACCOUNT-ID destroy for REMOTE-EMAIL-ID at STATE."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/set"
-             (:accountId ,remote-account-id
-                         :ifInState ,state
-                         :destroy [,remote-email-id])
-             "draft-cleanup"]]))
+    :methodCalls
+    [["Email/set"
+      (:accountId ,remote-account-id
+       :ifInState ,state
+       :destroy [,remote-email-id])
+      "draft-cleanup"]]))
 
 (defun chidu-jmap-draft-reconcile-request
     (remote-account-id remote-drafts-mailbox-id message-id)
@@ -129,27 +129,27 @@ CREATION-ID names EMAIL-OBJECT in the Set request."
 
 REMOTE-DRAFTS-MAILBOX-ID scopes the bounded query."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/query"
-             (:accountId ,remote-account-id
-                         :filter
-                         (:operator "AND"
-                                    :conditions
-                                    [(:inMailbox ,remote-drafts-mailbox-id)
-                                     (:hasKeyword "$draft")
-                                     (:header ["Message-ID" ,message-id])])
-                         :sort [(:property "receivedAt" :isAscending :json-false)]
-                         :collapseThreads :json-false
-                         :calculateTotal t
-                         :position 0
-                         :limit 2)
-             "draft-query"]
-            ["Email/get"
-             (:accountId ,remote-account-id
-                         ,(intern ":#ids")
-                         (:resultOf "draft-query" :name "Email/query" :path "/ids")
-                         :properties ["id" "blobId" "messageId" "mailboxIds" "keywords"])
-             "draft-get"]]))
+    :methodCalls
+    [["Email/query"
+      (:accountId ,remote-account-id
+       :filter
+       (:operator "AND"
+        :conditions
+        [(:inMailbox ,remote-drafts-mailbox-id)
+         (:hasKeyword "$draft")
+         (:header ["Message-ID" ,message-id])])
+       :sort [(:property "receivedAt" :isAscending :json-false)]
+       :collapseThreads :json-false
+       :calculateTotal t
+       :position 0
+       :limit 2)
+      "draft-query"]
+     ["Email/get"
+      (:accountId ,remote-account-id
+       ,(intern ":#ids")
+       (:resultOf "draft-query" :name "Email/query" :path "/ids")
+       :properties ["id" "blobId" "messageId" "mailboxIds" "keywords"])
+      "draft-get"]]))
 
 (defun chidu-jmap-draft--single-invocation
     (bytes expected-call-id remote-account-id)

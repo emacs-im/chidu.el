@@ -39,9 +39,9 @@
   "Decode one SQLite Draft publication ROW."
   (pcase-let
       ((`(,attempt-id ,workspace-id ,account-id ,identity-id
-                      ,drafts-mailbox-id ,revision ,message-id
-                      ,predecessor-remote-email-id
-                      ,predecessor-remote-blob-id ,phase ,error-kind)
+          ,drafts-mailbox-id ,revision ,message-id
+          ,predecessor-remote-email-id
+          ,predecessor-remote-blob-id ,phase ,error-kind)
         row))
     (chidu-store-sqlite--make-draft-publish-row
      :attempt-id attempt-id
@@ -300,21 +300,21 @@ captured workspace value."
                database row identity-id expected revision document change-seq)
               (chidu-sql-execute database
                 [:insert :into chidu-draft-publish-attempt
-                         :row
-                         [[attempt-id [:bind attempt-id]]
-                          [workspace-id [:bind workspace-id]]
-                          [account-id [:bind account-id]]
-                          [identity-id [:bind identity-id]]
-                          [drafts-mailbox-id
-                           [:bind (chidu-store-mailbox-mailbox-id drafts-mailbox)]]
-                          [revision [:bind revision]]
-                          [message-id [:bind message-id]]
-                          [predecessor-remote-email-id [:bind predecessor]]
-                          [predecessor-remote-blob-id [:bind predecessor-blob]]
-                          [phase [:literal "pending"]]
-                          [error-kind nil]
-                          [created-change-seq [:bind change-seq]]
-                          [updated-change-seq [:bind change-seq]]]])))
+                 :row
+                 [[attempt-id [:bind attempt-id]]
+                  [workspace-id [:bind workspace-id]]
+                  [account-id [:bind account-id]]
+                  [identity-id [:bind identity-id]]
+                  [drafts-mailbox-id
+                   [:bind (chidu-store-mailbox-mailbox-id drafts-mailbox)]]
+                  [revision [:bind revision]]
+                  [message-id [:bind message-id]]
+                  [predecessor-remote-email-id [:bind predecessor]]
+                  [predecessor-remote-blob-id [:bind predecessor-blob]]
+                  [phase [:literal "pending"]]
+                  [error-kind nil]
+                  [created-change-seq [:bind change-seq]]
+                  [updated-change-seq [:bind change-seq]]]])))
           (chidu-store-sqlite--compose-context state workspace-id))))))))
 
 (defun chidu-store-sqlite--mark-draft-publish-unknown (state operation)
@@ -346,10 +346,10 @@ captured workspace value."
                (chidu-store-sqlite--increment-change-seq database)))
           (chidu-sql-execute database
             [:update chidu-draft-publish-attempt
-                     :set [[phase [:literal "unknown"]]
-                           [error-kind nil]
-                           [updated-change-seq [:bind change-seq]]]
-                     :where [:= attempt-id [:bind attempt-id]]])))
+             :set [[phase [:literal "unknown"]]
+                   [error-kind nil]
+                   [updated-change-seq [:bind change-seq]]]
+             :where [:= attempt-id [:bind attempt-id]]])))
       (chidu-store-sqlite--draft-publish-context state row)))))
 
 (defun chidu-store-sqlite--retry-draft-publish-create (state operation)
@@ -378,10 +378,10 @@ captured workspace value."
                (chidu-store-sqlite--increment-change-seq database)))
           (chidu-sql-execute database
             [:update chidu-draft-publish-attempt
-                     :set [[phase [:literal "pending"]]
-                           [error-kind nil]
-                           [updated-change-seq [:bind change-seq]]]
-                     :where [:= attempt-id [:bind attempt-id]]])))
+             :set [[phase [:literal "pending"]]
+                   [error-kind nil]
+                   [updated-change-seq [:bind change-seq]]]
+             :where [:= attempt-id [:bind attempt-id]]])))
       (chidu-store-sqlite--draft-publish-context state row)))))
 
 (defun chidu-store-sqlite--settle-draft-publish-create (state operation)
@@ -438,35 +438,35 @@ captured workspace value."
                        row)))
                  (chidu-sql-execute database
                    [:update chidu-compose-workspace
-                            :set [[base-remote-email-id [:bind remote-email-id]]
-                                  [base-remote-blob-id [:bind remote-blob-id]]
-                                  [published-revision
-                                   [:bind
-                                    (chidu-store-sqlite--draft-publish-row-revision row)]]
-                                  [updated-change-seq [:bind change-seq]]]
-                            :where [:= workspace-id [:bind workspace-id]]])
+                    :set [[base-remote-email-id [:bind remote-email-id]]
+                          [base-remote-blob-id [:bind remote-blob-id]]
+                          [published-revision
+                           [:bind
+                            (chidu-store-sqlite--draft-publish-row-revision row)]]
+                          [updated-change-seq [:bind change-seq]]]
+                    :where [:= workspace-id [:bind workspace-id]]])
                  (if (and predecessor
                           (not (equal predecessor remote-email-id)))
                      (chidu-sql-execute database
                        [:update chidu-draft-publish-attempt
-                                :set [[phase [:literal "cleanup-pending"]]
-                                      [error-kind nil]
-                                      [updated-change-seq [:bind change-seq]]]
-                                :where [:= attempt-id [:bind attempt-id]]])
+                        :set [[phase [:literal "cleanup-pending"]]
+                              [error-kind nil]
+                              [updated-change-seq [:bind change-seq]]]
+                        :where [:= attempt-id [:bind attempt-id]]])
                    (chidu-sql-execute database
                      [:delete :from chidu-draft-publish-attempt
-                              :where [:= attempt-id [:bind attempt-id]]]))))
+                      :where [:= attempt-id [:bind attempt-id]]]))))
               ('rejected
                (chidu-sql-execute database
                  [:delete :from chidu-draft-publish-attempt
-                          :where [:= attempt-id [:bind attempt-id]]]))
+                  :where [:= attempt-id [:bind attempt-id]]]))
               ('unknown
                (chidu-sql-execute database
                  [:update chidu-draft-publish-attempt
-                          :set [[phase [:literal "unknown"]]
-                                [error-kind [:bind error-kind]]
-                                [updated-change-seq [:bind change-seq]]]
-                          :where [:= attempt-id [:bind attempt-id]]])))))
+                  :set [[phase [:literal "unknown"]]
+                        [error-kind [:bind error-kind]]
+                        [updated-change-seq [:bind change-seq]]]
+                  :where [:= attempt-id [:bind attempt-id]]])))))
         (chidu-store-sqlite--compose-context state workspace-id))))))
 
 (defun chidu-store-sqlite--settle-draft-publish-cleanup (state operation)
@@ -504,12 +504,12 @@ captured workspace value."
           (if (memq outcome '(succeeded rejected))
               (chidu-sql-execute database
                 [:delete :from chidu-draft-publish-attempt
-                         :where [:= attempt-id [:bind attempt-id]]])
+                 :where [:= attempt-id [:bind attempt-id]]])
             (chidu-sql-execute database
               [:update chidu-draft-publish-attempt
-                       :set [[error-kind [:bind error-kind]]
-                             [updated-change-seq [:bind change-seq]]]
-                       :where [:= attempt-id [:bind attempt-id]]]))))
+               :set [[error-kind [:bind error-kind]]
+                     [updated-change-seq [:bind change-seq]]]
+               :where [:= attempt-id [:bind attempt-id]]]))))
       (chidu-store-sqlite--draft-publish-context state row)))))
 
 (provide 'chidu-store-sqlite-draft)

@@ -26,13 +26,13 @@ result."
      :from [:as jmap-email-generation-member member]
      :joins
      [[:inner [:as jmap-email-record email]
-              :on [:and
-                   [:= email:account-id member:account-id]
-                   [:= email:local-email-id member:local-email-id]]]
+       :on [:and
+            [:= email:account-id member:account-id]
+            [:= email:local-email-id member:local-email-id]]]
       [:left [:as jmap-email-metadata metadata]
-             :on [:and
-                  [:= metadata:account-id member:account-id]
-                  [:= metadata:local-email-id member:local-email-id]]]]
+       :on [:and
+            [:= metadata:account-id member:account-id]
+            [:= metadata:local-email-id member:local-email-id]]]]
      :where
      [:and
       [:= member:account-id [:bind account-id]]
@@ -126,12 +126,12 @@ LIMIT bounds candidate rows.  Return a typed failure on profile drift."
 ACCOUNT-ID scopes the Email and CHANGE-SEQ records observation time."
   (chidu-sql-execute database
     [:insert :into jmap-email-preview
-             :row
-             [[account-id [:bind account-id]]
-              [local-email-id [:bind local-email-id]]
-              [value [:bind preview] :update]
-              [observed-change-seq [:bind change-seq] :update]]
-             :on-conflict [account-id local-email-id]]))
+     :row
+     [[account-id [:bind account-id]]
+      [local-email-id [:bind local-email-id]]
+      [value [:bind preview] :update]
+      [observed-change-seq [:bind change-seq] :update]]
+     :on-conflict [account-id local-email-id]]))
 
 (defun chidu-store-sqlite--insert-email-metadata
     (database account-id local-email-id profile metadata preview change-seq)
@@ -140,62 +140,62 @@ ACCOUNT-ID scopes the Email and CHANGE-SEQ records observation time."
 ACCOUNT-ID, LOCAL-EMAIL-ID, PROFILE, and CHANGE-SEQ identify the observation."
   (chidu-sql-execute database
     [:insert :into jmap-email-metadata
-             :row
-             [[account-id [:bind account-id]]
-              [local-email-id [:bind local-email-id]]
-              [profile-version [:bind profile]]
-              [remote-blob-id
-               [:bind (chidu-store-email-metadata-remote-blob-id metadata)]]
-              [remote-thread-id
-               [:bind (chidu-store-email-metadata-remote-thread-id metadata)]]
-              [size [:bind (chidu-store-email-metadata-size metadata)]]
-              [received-at [:bind (chidu-store-email-metadata-received-at metadata)]]
-              [sent-at [:bind (chidu-store-email-metadata-sent-at metadata)]]
-              [sender-json
-               [:bind
-                (chidu-store-sqlite--email-address-vector-json
-                 (chidu-store-email-metadata-sender metadata))]]
-              [from-json
-               [:bind
-                (chidu-store-sqlite--email-address-vector-json
-                 (chidu-store-email-metadata-from metadata))]]
-              [to-json
-               [:bind
-                (chidu-store-sqlite--email-address-vector-json
-                 (chidu-store-email-metadata-to metadata))]]
-              [cc-json
-               [:bind
-                (chidu-store-sqlite--email-address-vector-json
-                 (chidu-store-email-metadata-cc metadata))]]
-              [bcc-json
-               [:bind
-                (chidu-store-sqlite--email-address-vector-json
-                 (chidu-store-email-metadata-bcc metadata))]]
-              [reply-to-json
-               [:bind
-                (chidu-store-sqlite--email-address-vector-json
-                 (chidu-store-email-metadata-reply-to metadata))]]
-              [subject [:bind (chidu-store-email-metadata-subject metadata)]]
-              [message-ids-json
-               [:bind
-                (chidu-store-sqlite--string-vector-json
-                 (chidu-store-email-metadata-message-ids metadata)
-                 "Email metadata messageId")]]
-              [in-reply-to-json
-               [:bind
-                (chidu-store-sqlite--string-vector-json
-                 (chidu-store-email-metadata-in-reply-to metadata)
-                 "Email metadata inReplyTo")]]
-              [references-json
-               [:bind
-                (chidu-store-sqlite--string-vector-json
-                 (chidu-store-email-metadata-references metadata)
-                 "Email metadata references")]]
-              [has-attachment
-               [:bind
-                (chidu-store-sqlite--integer-bool
-                 (chidu-store-email-metadata-has-attachment-p metadata))]]
-              [observed-change-seq [:bind change-seq]]]])
+     :row
+     [[account-id [:bind account-id]]
+      [local-email-id [:bind local-email-id]]
+      [profile-version [:bind profile]]
+      [remote-blob-id
+       [:bind (chidu-store-email-metadata-remote-blob-id metadata)]]
+      [remote-thread-id
+       [:bind (chidu-store-email-metadata-remote-thread-id metadata)]]
+      [size [:bind (chidu-store-email-metadata-size metadata)]]
+      [received-at [:bind (chidu-store-email-metadata-received-at metadata)]]
+      [sent-at [:bind (chidu-store-email-metadata-sent-at metadata)]]
+      [sender-json
+       [:bind
+        (chidu-store-sqlite--email-address-vector-json
+         (chidu-store-email-metadata-sender metadata))]]
+      [from-json
+       [:bind
+        (chidu-store-sqlite--email-address-vector-json
+         (chidu-store-email-metadata-from metadata))]]
+      [to-json
+       [:bind
+        (chidu-store-sqlite--email-address-vector-json
+         (chidu-store-email-metadata-to metadata))]]
+      [cc-json
+       [:bind
+        (chidu-store-sqlite--email-address-vector-json
+         (chidu-store-email-metadata-cc metadata))]]
+      [bcc-json
+       [:bind
+        (chidu-store-sqlite--email-address-vector-json
+         (chidu-store-email-metadata-bcc metadata))]]
+      [reply-to-json
+       [:bind
+        (chidu-store-sqlite--email-address-vector-json
+         (chidu-store-email-metadata-reply-to metadata))]]
+      [subject [:bind (chidu-store-email-metadata-subject metadata)]]
+      [message-ids-json
+       [:bind
+        (chidu-store-sqlite--string-vector-json
+         (chidu-store-email-metadata-message-ids metadata)
+         "Email metadata messageId")]]
+      [in-reply-to-json
+       [:bind
+        (chidu-store-sqlite--string-vector-json
+         (chidu-store-email-metadata-in-reply-to metadata)
+         "Email metadata inReplyTo")]]
+      [references-json
+       [:bind
+        (chidu-store-sqlite--string-vector-json
+         (chidu-store-email-metadata-references metadata)
+         "Email metadata references")]]
+      [has-attachment
+       [:bind
+        (chidu-store-sqlite--integer-bool
+         (chidu-store-email-metadata-has-attachment-p metadata))]]
+      [observed-change-seq [:bind change-seq]]]])
   (chidu-store-sqlite--upsert-email-preview
    database account-id local-email-id preview change-seq))
 
@@ -206,36 +206,36 @@ ACCOUNT-ID, LOCAL-EMAIL-ID, PROFILE, and CHANGE-SEQ identify the observation."
 ACCOUNT-ID, GENERATION-ID, and LOCAL-EMAIL-ID identify the member."
   (chidu-sql-execute database
     [:delete :from jmap-email-generation-mailbox
-             :where [:and
-                     [:= account-id [:bind account-id]]
-                     [:= generation-id [:bind generation-id]]
-                     [:= local-email-id [:bind local-email-id]]]])
+     :where [:and
+             [:= account-id [:bind account-id]]
+             [:= generation-id [:bind generation-id]]
+             [:= local-email-id [:bind local-email-id]]]])
   (chidu-sql-execute database
     [:delete :from jmap-email-generation-keyword
-             :where [:and
-                     [:= account-id [:bind account-id]]
-                     [:= generation-id [:bind generation-id]]
-                     [:= local-email-id [:bind local-email-id]]]])
+     :where [:and
+             [:= account-id [:bind account-id]]
+             [:= generation-id [:bind generation-id]]
+             [:= local-email-id [:bind local-email-id]]]])
   (cl-loop
    for remote-mailbox-id across mailbox-ids
    do
    (chidu-sql-execute database
      [:insert :into jmap-email-generation-mailbox
-              :row
-              [[account-id [:bind account-id]]
-               [generation-id [:bind generation-id]]
-               [local-email-id [:bind local-email-id]]
-               [remote-mailbox-id [:bind remote-mailbox-id]]]]))
+      :row
+      [[account-id [:bind account-id]]
+       [generation-id [:bind generation-id]]
+       [local-email-id [:bind local-email-id]]
+       [remote-mailbox-id [:bind remote-mailbox-id]]]]))
   (cl-loop
    for keyword across keywords
    do
    (chidu-sql-execute database
      [:insert :into jmap-email-generation-keyword
-              :row
-              [[account-id [:bind account-id]]
-               [generation-id [:bind generation-id]]
-               [local-email-id [:bind local-email-id]]
-               [keyword [:bind keyword]]]])))
+      :row
+      [[account-id [:bind account-id]]
+       [generation-id [:bind generation-id]]
+       [local-email-id [:bind local-email-id]]
+       [keyword [:bind keyword]]]])))
 
 (defun chidu-store-sqlite--remove-generation-member
     (database account-id generation-id local-email-id)
@@ -244,10 +244,10 @@ ACCOUNT-ID, GENERATION-ID, and LOCAL-EMAIL-ID identify the member."
 ACCOUNT-ID scopes the generation."
   (chidu-sql-execute database
     [:delete :from jmap-email-generation-member
-             :where [:and
-                     [:= account-id [:bind account-id]]
-                     [:= generation-id [:bind generation-id]]
-                     [:= local-email-id [:bind local-email-id]]]]))
+     :where [:and
+             [:= account-id [:bind account-id]]
+             [:= generation-id [:bind generation-id]]
+             [:= local-email-id [:bind local-email-id]]]]))
 
 (defun chidu-store-sqlite--hydration-plan-matches-p (plan observation)
   "Return non-nil when OBSERVATION exactly settles PLAN in order."
@@ -321,11 +321,11 @@ EXPECTED-REVISION fences the closed transition."
                 database account-id generation-id local-id)))
             (chidu-sql-execute database
               [:update jmap-email-checkpoint
-                       :set
-                       [[hydration-after-local-email-id [:bind last-local-id]]
-                        [revision [:bind (1+ expected-revision)]]
-                        [observed-change-seq [:bind change-seq]]]
-                       :where [:= account-id [:bind account-id]]])))
+               :set
+               [[hydration-after-local-email-id [:bind last-local-id]]
+                [revision [:bind (1+ expected-revision)]]
+                [observed-change-seq [:bind change-seq]]]
+               :where [:= account-id [:bind account-id]]])))
         (chidu-store-sqlite--email-context state account-id))))))
 
 (defun chidu-store-sqlite--apply-email-hydration (state operation)
@@ -433,12 +433,12 @@ EXPECTED-REVISION fences the closed transition."
                        (chidu-store-sqlite--increment-change-seq database)))
                   (chidu-sql-execute database
                     [:update jmap-email-checkpoint
-                             :set
-                             [[phase [:literal "metadata-catchup"]]
-                              [hydration-after-local-email-id nil]
-                              [revision [:bind (1+ expected-revision)]]
-                              [observed-change-seq [:bind change-seq]]]
-                             :where [:= account-id [:bind account-id]]])))
+                     :set
+                     [[phase [:literal "metadata-catchup"]]
+                      [hydration-after-local-email-id nil]
+                      [revision [:bind (1+ expected-revision)]]
+                      [observed-change-seq [:bind change-seq]]]
+                     :where [:= account-id [:bind account-id]]])))
               (chidu-store-sqlite--email-context state account-id))))))))))
 
 (provide 'chidu-store-sqlite-hydration)

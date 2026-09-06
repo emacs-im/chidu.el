@@ -722,8 +722,8 @@ when no row exists.  Otherwise return BODY results for every row."
                           (format "chidu-sql-value-%d" index))))
                (select-form
                 `(sqlite-select ,database-symbol
-                                ,(chidu-sql--template-sql template)
-                                (list ,@value-symbols))))
+                  ,(chidu-sql--template-sql template)
+                  (list ,@value-symbols))))
     `(let* ((,database-symbol ,database)
             ,@(cl-mapcar (lambda (symbol value) `(,symbol ,value))
                          value-symbols holes))

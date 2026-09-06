@@ -143,8 +143,8 @@
             :local-email-id "22222222-2222-4222-8222-222222222222"
             :remote-email-id "email-2" :phase 'pending)))
          (request
-          (chidu-jmap-mailbox-move--request
-           "account" "inbox" "archive" intents))
+           (chidu-jmap-mailbox-move--request
+            "account" "inbox" "archive" intents))
          (arguments (aref (aref (plist-get request :methodCalls) 0) 1))
          (updates (plist-get arguments :update)))
     (should (= 2 (hash-table-count updates)))

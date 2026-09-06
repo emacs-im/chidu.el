@@ -35,12 +35,12 @@
 
 MAX-CHANGES bounds the total number of ids in the three wire change arrays."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/changes"
-             (:accountId ,remote-account-id
-                         :sinceState ,since-state
-                         :maxChanges ,max-changes)
-             "email-changes"]]))
+    :methodCalls
+    [["Email/changes"
+      (:accountId ,remote-account-id
+       :sinceState ,since-state
+       :maxChanges ,max-changes)
+      "email-changes"]]))
 
 (defun chidu-jmap-email-changes--id-vector (value context)
   "Decode unique JMAP Id vector VALUE for CONTEXT."

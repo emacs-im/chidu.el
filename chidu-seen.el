@@ -173,9 +173,9 @@ and standalone readers leave it nil and operate on the Email at point.")
      ;; Keep local-first intent when dispatch was impossible, credentials need
      ;; repair, or the response cannot prove whether the idempotent patch ran.
      ((memq kind '(credential-error authentication-rejected
-                                    transport-unavailable jmap-request-failed
-                                    network-error response-too-large invalid-jmap-response
-                                    unexpected-http-status))
+                   transport-unavailable jmap-request-failed
+                   network-error response-too-large invalid-jmap-response
+                   unexpected-http-status))
       'unknown)
      ((eq kind 'http-error)
       (if (and (integerp status)

@@ -444,7 +444,7 @@ opens."
     (add-text-properties
      start (point)
      '(chidu-compose-boundary t
-                              rear-nonsticky (chidu-compose-boundary)))))
+       rear-nonsticky (chidu-compose-boundary)))))
 
 (defun chidu-compose--insert-field (field label value)
   "Insert Compose FIELD with generated LABEL and editable VALUE."

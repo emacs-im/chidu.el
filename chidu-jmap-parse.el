@@ -52,16 +52,16 @@
 
 BODY-VALUE-BYTE-LIMIT bounds each decoded text or HTML part."
   `(:using [,chidu-jmap-core-capability ,chidu-jmap-mail-capability]
-           :methodCalls
-           [["Email/parse"
-             (:accountId ,remote-account-id
-                         :blobIds [,blob-id]
-                         :properties ,chidu-jmap-parse-properties
-                         :bodyProperties ,chidu-jmap-body-part-properties
-                         :fetchTextBodyValues t
-                         :fetchHTMLBodyValues t
-                         :maxBodyValueBytes ,body-value-byte-limit)
-             "email-parse"]]))
+    :methodCalls
+    [["Email/parse"
+      (:accountId ,remote-account-id
+       :blobIds [,blob-id]
+       :properties ,chidu-jmap-parse-properties
+       :bodyProperties ,chidu-jmap-body-part-properties
+       :fetchTextBodyValues t
+       :fetchHTMLBodyValues t
+       :maxBodyValueBytes ,body-value-byte-limit)
+      "email-parse"]]))
 
 (defun chidu-jmap-parse--nullable-date (value context)
   "Return nil for JSON null or copied date string VALUE for CONTEXT."

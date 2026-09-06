@@ -1060,7 +1060,7 @@ NEXT-OFFSET is the number of ids consumed from the current wire page."
       (when (and (chidu-email-run--live-p run)
                  (memq phase
                        '(enumerating membership-catchup hydrating
-                                     metadata-catchup activating)))
+                         metadata-catchup activating)))
         (setf (chidu-email-run-rebuilt-p run) t))
       (pcase phase
         ('uninitialized

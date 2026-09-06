@@ -96,29 +96,29 @@
         :from [:as jmap-search-projection-row row]
         :joins
         [[:inner [:as jmap-email-record email]
-                 :on [:and
-                      [:= email:account-id row:account-id]
-                      [:= email:local-email-id row:local-email-id]]]
+          :on [:and
+               [:= email:account-id row:account-id]
+               [:= email:local-email-id row:local-email-id]]]
          [:left [:as jmap-seen-intent intent]
-                :on [:and
-                     [:= intent:account-id row:account-id]
-                     [:= intent:local-email-id row:local-email-id]]]]
+          :on [:and
+               [:= intent:account-id row:account-id]
+               [:= intent:local-email-id row:local-email-id]]]]
         :where
         [:and
          [:= row:account-id [:bind account-id]]
          [:= row:query-key [:bind query-key]]
          [:not-exists
           [:select [1]
-                   :from [:as jmap-mailbox-move-target move-target]
-                   :where [:and
-                           [:= move-target:account-id row:account-id]
-                           [:= move-target:local-email-id row:local-email-id]]]]
+           :from [:as jmap-mailbox-move-target move-target]
+           :where [:and
+                   [:= move-target:account-id row:account-id]
+                   [:= move-target:local-email-id row:local-email-id]]]]
          [:not-exists
           [:select [1]
-                   :from [:as jmap-trash-target trash-target]
-                   :where [:and
-                           [:= trash-target:account-id row:account-id]
-                           [:= trash-target:local-email-id row:local-email-id]]]]]
+           :from [:as jmap-trash-target trash-target]
+           :where [:and
+                   [:= trash-target:account-id row:account-id]
+                   [:= trash-target:local-email-id row:local-email-id]]]]]
         :order-by [[row:ordinal :asc]]]
      (chidu-store-search-row-create
       :summary-row
@@ -147,11 +147,11 @@
   "Invalidate DATABASE Search projections below ACCOUNT-ID at CHANGE-SEQ."
   (chidu-sql-execute database
     [:update jmap-search-projection
-             :set [[is-stale 1]
-                   [maybe-more 0]
-                   [revision [:+ revision 1]]
-                   [observed-change-seq [:bind change-seq]]]
-             :where [:= account-id [:bind account-id]]]))
+     :set [[is-stale 1]
+           [maybe-more 0]
+           [revision [:+ revision 1]]
+           [observed-change-seq [:bind change-seq]]]
+     :where [:= account-id [:bind account-id]]]))
 
 (defun chidu-store-sqlite--search-context (state account-id query-key)
   "Return ACCOUNT-ID and QUERY-KEY search context from SQLite STATE."
@@ -254,26 +254,26 @@
                      (chidu-store-sqlite--increment-change-seq database)))
                 (chidu-sql-execute database
                   [:insert :into jmap-email-generation
-                           :row
-                           [[generation-id [:bind generation-id]]
-                            [account-id [:bind account-id]]
-                            [lifecycle [:literal "building"]]
-                            [profile-version [:bind profile-version]]
-                            [created-checkpoint-revision [:bind revision]]]])
+                   :row
+                   [[generation-id [:bind generation-id]]
+                    [account-id [:bind account-id]]
+                    [lifecycle [:literal "building"]]
+                    [profile-version [:bind profile-version]]
+                    [created-checkpoint-revision [:bind revision]]]])
                 (chidu-sql-execute database
                   [:insert :into jmap-email-checkpoint
-                           :row
-                           [[account-id [:bind account-id]]
-                            [phase [:literal "enumerating"]]
-                            [generation-id [:bind generation-id]]
-                            [profile-version [:bind profile-version]]
-                            [state [:bind state-token]]
-                            [query-state nil]
-                            [can-calculate-changes nil]
-                            [committed-count 0]
-                            [anchor-remote-email-id nil]
-                            [revision [:bind revision]]
-                            [observed-change-seq [:bind change-seq]]]])))
+                   :row
+                   [[account-id [:bind account-id]]
+                    [phase [:literal "enumerating"]]
+                    [generation-id [:bind generation-id]]
+                    [profile-version [:bind profile-version]]
+                    [state [:bind state-token]]
+                    [query-state nil]
+                    [can-calculate-changes nil]
+                    [committed-count 0]
+                    [anchor-remote-email-id nil]
+                    [revision [:bind revision]]
+                    [observed-change-seq [:bind change-seq]]]])))
             (chidu-store-sqlite--email-context state account-id))))))))
 
 (defun chidu-store-sqlite--restart-email-bootstrap (state operation)
@@ -333,32 +333,32 @@
                 (unless live-p
                   (chidu-sql-execute database
                     [:update jmap-email-generation
-                             :set [[lifecycle [:literal "retired"]]]
-                             :where [:and
-                                     [:= generation-id [:bind generation-id]]
-                                     [:= account-id [:bind account-id]]
-                                     [:= lifecycle [:literal "building"]]]]))
+                     :set [[lifecycle [:literal "retired"]]]
+                     :where [:and
+                             [:= generation-id [:bind generation-id]]
+                             [:= account-id [:bind account-id]]
+                             [:= lifecycle [:literal "building"]]]]))
                 (chidu-sql-execute database
                   [:insert :into jmap-email-generation
-                           :row
-                           [[generation-id [:bind next-generation-id]]
-                            [account-id [:bind account-id]]
-                            [lifecycle [:literal "building"]]
-                            [profile-version [:bind profile-version]]
-                            [created-checkpoint-revision [:bind next-revision]]]])
+                   :row
+                   [[generation-id [:bind next-generation-id]]
+                    [account-id [:bind account-id]]
+                    [lifecycle [:literal "building"]]
+                    [profile-version [:bind profile-version]]
+                    [created-checkpoint-revision [:bind next-revision]]]])
                 (chidu-sql-execute database
                   [:update jmap-email-checkpoint
-                           :set [[phase [:literal "enumerating"]]
-                                 [generation-id [:bind next-generation-id]]
-                                 [profile-version [:bind profile-version]]
-                                 [state [:bind state-token]]
-                                 [query-state nil]
-                                 [can-calculate-changes nil]
-                                 [committed-count 0]
-                                 [anchor-remote-email-id nil]
-                                 [revision [:bind next-revision]]
-                                 [observed-change-seq [:bind change-seq]]]
-                           :where [:= account-id [:bind account-id]]])
+                   :set [[phase [:literal "enumerating"]]
+                         [generation-id [:bind next-generation-id]]
+                         [profile-version [:bind profile-version]]
+                         [state [:bind state-token]]
+                         [query-state nil]
+                         [can-calculate-changes nil]
+                         [committed-count 0]
+                         [anchor-remote-email-id nil]
+                         [revision [:bind next-revision]]
+                         [observed-change-seq [:bind change-seq]]]
+                   :where [:= account-id [:bind account-id]]])
                 (unless live-p
                   (chidu-sql-execute database
                     [:delete
@@ -447,11 +447,11 @@
            (car
             (chidu-sql-select database
               [:select [1]
-                       :from jmap-email-generation
-                       :where [:and
-                               [:= generation-id [:bind generation-id]]
-                               [:= account-id [:bind account-id]]
-                               [:= lifecycle [:literal "building"]]]])))
+               :from jmap-email-generation
+               :where [:and
+                       [:= generation-id [:bind generation-id]]
+                       [:= account-id [:bind account-id]]
+                       [:= lifecycle [:literal "building"]]]])))
           (signal 'chidu-invariant-error
                   (list "Missing owned building Email generation"
                         generation-id)))
@@ -463,16 +463,16 @@
              (car
               (chidu-sql-select database
                 [:select [1]
-                         :from [:as jmap-email-generation-member member]
-                         :joins
-                         [[:inner [:as jmap-email-record email]
-                                  :on [:and
-                                       [:= email:local-email-id member:local-email-id]
-                                       [:= email:account-id member:account-id]]]]
-                         :where [:and
-                                 [:= member:generation-id [:bind generation-id]]
-                                 [:= member:account-id [:bind account-id]]
-                                 [:= email:remote-email-id [:bind remote-id]]]]))
+                 :from [:as jmap-email-generation-member member]
+                 :joins
+                 [[:inner [:as jmap-email-record email]
+                   :on [:and
+                        [:= email:local-email-id member:local-email-id]
+                        [:= email:account-id member:account-id]]]]
+                 :where [:and
+                         [:= member:generation-id [:bind generation-id]]
+                         [:= member:account-id [:bind account-id]]
+                         [:= email:remote-email-id [:bind remote-id]]]]))
              do (setq conflict remote-id))
             (if conflict
                 (chidu-result-failure-create
@@ -499,30 +499,30 @@
                      do
                      (chidu-sql-execute database
                        [:insert :into jmap-email-generation-member
-                                :row
-                                [[account-id [:bind account-id]]
-                                 [generation-id [:bind generation-id]]
-                                 [local-email-id [:bind local-id]]
-                                 [ordinal [:bind ordinal]]]]))
+                        :row
+                        [[account-id [:bind account-id]]
+                         [generation-id [:bind generation-id]]
+                         [local-email-id [:bind local-id]]
+                         [ordinal [:bind ordinal]]]]))
                     (chidu-sql-execute database
                       [:update jmap-email-checkpoint
-                               :set
-                               [[phase
-                                 [:bind
-                                  (if nonempty
-                                      "enumerating"
-                                    "membership-catchup")]]
-                                [query-state [:bind query-state]]
-                                [can-calculate-changes
-                                 [:bind
-                                  (chidu-store-sqlite--integer-bool
-                                   (chidu-store-email-query-page-observation-can-calculate-changes-p
-                                    observation))]]
-                                [committed-count [:bind next-count]]
-                                [anchor-remote-email-id [:bind next-anchor]]
-                                [revision [:bind next-revision]]
-                                [observed-change-seq [:bind change-seq]]]
-                               :where [:= account-id [:bind account-id]]])))
+                       :set
+                       [[phase
+                         [:bind
+                          (if nonempty
+                              "enumerating"
+                            "membership-catchup")]]
+                        [query-state [:bind query-state]]
+                        [can-calculate-changes
+                         [:bind
+                          (chidu-store-sqlite--integer-bool
+                           (chidu-store-email-query-page-observation-can-calculate-changes-p
+                            observation))]]
+                        [committed-count [:bind next-count]]
+                        [anchor-remote-email-id [:bind next-anchor]]
+                        [revision [:bind next-revision]]
+                        [observed-change-seq [:bind change-seq]]]
+                       :where [:= account-id [:bind account-id]]])))
                 (chidu-store-sqlite--email-context state account-id))))))))))
 
 (defun chidu-store-sqlite--generation-member-local-id
@@ -533,17 +533,17 @@ ACCOUNT-ID and GENERATION-ID scope the lookup."
   (caar
    (chidu-sql-select database
      [:select [member:local-email-id]
-              :from [:as jmap-email-generation-member member]
-              :joins
-              [[:inner [:as jmap-email-record email]
-                       :on [:and
-                            [:= email:account-id member:account-id]
-                            [:= email:local-email-id member:local-email-id]]]]
-              :where [:and
-                      [:= member:account-id [:bind account-id]]
-                      [:= member:generation-id [:bind generation-id]]
-                      [:= email:remote-email-id [:bind remote-email-id]]]
-              :limit 1])))
+      :from [:as jmap-email-generation-member member]
+      :joins
+      [[:inner [:as jmap-email-record email]
+        :on [:and
+             [:= email:account-id member:account-id]
+             [:= email:local-email-id member:local-email-id]]]]
+      :where [:and
+              [:= member:account-id [:bind account-id]]
+              [:= member:generation-id [:bind generation-id]]
+              [:= email:remote-email-id [:bind remote-email-id]]]
+      :limit 1])))
 
 (defun chidu-store-sqlite--generation-next-ordinal
     (database account-id generation-id)
@@ -555,10 +555,10 @@ ACCOUNT-ID scopes the generation."
     (caar
      (chidu-sql-select database
        [:select [[:call max ordinal]]
-                :from jmap-email-generation-member
-                :where [:and
-                        [:= account-id [:bind account-id]]
-                        [:= generation-id [:bind generation-id]]]]))
+        :from jmap-email-generation-member
+        :where [:and
+                [:= account-id [:bind account-id]]
+                [:= generation-id [:bind generation-id]]]]))
     -1)))
 
 (defun chidu-store-sqlite--apply-email-membership-changes (state operation)
@@ -621,11 +621,11 @@ ACCOUNT-ID scopes the generation."
            (car
             (chidu-sql-select database
               [:select [1]
-                       :from jmap-email-generation
-                       :where [:and
-                               [:= generation-id [:bind generation-id]]
-                               [:= account-id [:bind account-id]]
-                               [:= lifecycle [:literal "building"]]]])))
+               :from jmap-email-generation
+               :where [:and
+                       [:= generation-id [:bind generation-id]]
+                       [:= account-id [:bind account-id]]
+                       [:= lifecycle [:literal "building"]]]])))
           (signal 'chidu-invariant-error
                   (list "Missing owned building Email generation"
                         generation-id)))
@@ -646,10 +646,10 @@ ACCOUNT-ID scopes the generation."
                do
                (chidu-sql-execute database
                  [:delete :from jmap-email-generation-member
-                          :where [:and
-                                  [:= account-id [:bind account-id]]
-                                  [:= generation-id [:bind generation-id]]
-                                  [:= local-email-id [:bind local-id]]]]))
+                  :where [:and
+                          [:= account-id [:bind account-id]]
+                          [:= generation-id [:bind generation-id]]
+                          [:= local-email-id [:bind local-id]]]]))
               (cl-loop
                for remote-id across
                (chidu-store-email-changes-observation-created observation)
@@ -662,29 +662,29 @@ ACCOUNT-ID scopes the generation."
                        database account-id remote-id change-seq)))
                  (chidu-sql-execute database
                    [:insert :into jmap-email-generation-member
-                            :row
-                            [[account-id [:bind account-id]]
-                             [generation-id [:bind generation-id]]
-                             [local-email-id [:bind local-id]]
-                             [ordinal [:bind next-ordinal]]]])
+                    :row
+                    [[account-id [:bind account-id]]
+                     [generation-id [:bind generation-id]]
+                     [local-email-id [:bind local-id]]
+                     [ordinal [:bind next-ordinal]]]])
                  (cl-incf next-ordinal)))
               (chidu-sql-execute database
                 [:update jmap-email-checkpoint
-                         :set
-                         [[phase
-                           [:bind
-                            (if
-                                (chidu-store-email-changes-observation-has-more-changes-p
-                                 observation)
-                                "membership-catchup"
-                              "hydrating")]]
-                          [state
-                           [:bind
-                            (chidu-store-email-changes-observation-new-state
-                             observation)]]
-                          [revision [:bind (1+ actual-revision)]]
-                          [observed-change-seq [:bind change-seq]]]
-                         :where [:= account-id [:bind account-id]]])))
+                 :set
+                 [[phase
+                   [:bind
+                    (if
+                        (chidu-store-email-changes-observation-has-more-changes-p
+                         observation)
+                        "membership-catchup"
+                      "hydrating")]]
+                  [state
+                   [:bind
+                    (chidu-store-email-changes-observation-new-state
+                     observation)]]
+                  [revision [:bind (1+ actual-revision)]]
+                  [observed-change-seq [:bind change-seq]]]
+                 :where [:= account-id [:bind account-id]]])))
           (chidu-store-sqlite--email-context state account-id)))))))
 
 (defun chidu-store-sqlite--insert-search-rows
@@ -705,47 +705,47 @@ START-ORDINAL sets the first row ordinal; CHANGE-SEQ records observation time."
    do
    (chidu-sql-execute database
      [:insert :into jmap-search-projection-row
-              :row
-              [[account-id [:bind account-id]]
-               [query-key [:bind query-key]]
-               [ordinal [:bind ordinal]]
-               [local-email-id [:bind local-id]]
-               [remote-thread-id
-                [:bind
-                 (chidu-store-email-summary-observation-row-remote-thread-id summary)]]
-               [received-at
-                [:bind
-                 (chidu-store-email-summary-observation-row-received-at summary)]]
-               [from-name
-                [:bind (chidu-store-email-summary-observation-row-from-name summary)]]
-               [from-email
-                [:bind (chidu-store-email-summary-observation-row-from-email summary)]]
-               [subject
-                [:bind (chidu-store-email-summary-observation-row-subject summary)]]
-               [preview
-                [:bind (chidu-store-email-summary-observation-row-preview summary)]]
-               [is-unread
-                [:bind
-                 (chidu-store-sqlite--integer-bool
-                  (chidu-store-email-summary-observation-row-unread-p summary))]]
-               [is-flagged
-                [:bind
-                 (chidu-store-sqlite--integer-bool
-                  (chidu-store-email-summary-observation-row-flagged-p summary))]]
-               [has-attachment
-                [:bind
-                 (chidu-store-sqlite--integer-bool
-                  (chidu-store-email-summary-observation-row-has-attachment-p
-                   summary))]]
-               [remote-mailbox-ids-json
-                [:bind
-                 (chidu-store-sqlite--string-vector-json
-                  (chidu-store-search-observation-row-remote-mailbox-ids item)
-                  "Search remote Mailbox ids")]]
-               [snippet-subject
-                [:bind (and snippet (chidu-store-search-snippet-subject snippet))]]
-               [snippet-preview
-                [:bind (and snippet (chidu-store-search-snippet-preview snippet))]]]])))
+      :row
+      [[account-id [:bind account-id]]
+       [query-key [:bind query-key]]
+       [ordinal [:bind ordinal]]
+       [local-email-id [:bind local-id]]
+       [remote-thread-id
+        [:bind
+         (chidu-store-email-summary-observation-row-remote-thread-id summary)]]
+       [received-at
+        [:bind
+         (chidu-store-email-summary-observation-row-received-at summary)]]
+       [from-name
+        [:bind (chidu-store-email-summary-observation-row-from-name summary)]]
+       [from-email
+        [:bind (chidu-store-email-summary-observation-row-from-email summary)]]
+       [subject
+        [:bind (chidu-store-email-summary-observation-row-subject summary)]]
+       [preview
+        [:bind (chidu-store-email-summary-observation-row-preview summary)]]
+       [is-unread
+        [:bind
+         (chidu-store-sqlite--integer-bool
+          (chidu-store-email-summary-observation-row-unread-p summary))]]
+       [is-flagged
+        [:bind
+         (chidu-store-sqlite--integer-bool
+          (chidu-store-email-summary-observation-row-flagged-p summary))]]
+       [has-attachment
+        [:bind
+         (chidu-store-sqlite--integer-bool
+          (chidu-store-email-summary-observation-row-has-attachment-p
+           summary))]]
+       [remote-mailbox-ids-json
+        [:bind
+         (chidu-store-sqlite--string-vector-json
+          (chidu-store-search-observation-row-remote-mailbox-ids item)
+          "Search remote Mailbox ids")]]
+       [snippet-subject
+        [:bind (and snippet (chidu-store-search-snippet-subject snippet))]]
+       [snippet-preview
+        [:bind (and snippet (chidu-store-search-snippet-preview snippet))]]]])))
 
 (defun chidu-store-sqlite--pagination-overlap-id (current-remote-ids rows key)
   "Return first duplicate remote id between CURRENT-REMOTE-IDS and ROWS.
@@ -805,40 +805,40 @@ KEY extracts one summary observation row from each element of ROWS."
                      (chidu-store-sqlite--increment-change-seq database)))
                 (chidu-sql-execute database
                   [:insert :into jmap-search-projection
-                           :row
-                           [[account-id [:bind account-id]]
-                            [query-key [:bind query-key]]
-                            [query-text
-                             [:bind
-                              (chidu-store-search-observation-query-text observation)]
-                             :update]
-                            [filter-json
-                             [:bind
-                              (chidu-store-search-observation-filter-json observation)]
-                             :update]
-                            [query-state
-                             [:bind
-                              (chidu-store-search-observation-query-state observation)]
-                             :update]
-                            [email-state
-                             [:bind
-                              (chidu-store-search-observation-email-state observation)]
-                             :update]
-                            [cursor-remote-email-id
-                             [:bind
-                              (chidu-store-search-observation-cursor-remote-email-id
-                               observation)]
-                             :update]
-                            [revision [:bind next-revision] :update]
-                            [maybe-more
-                             [:bind
-                              (chidu-store-sqlite--integer-bool
-                               (chidu-store-search-observation-maybe-more-p
-                                observation))]
-                             :update]
-                            [is-stale 0 :update]
-                            [observed-change-seq [:bind change-seq] :update]]
-                           :on-conflict [account-id query-key]])
+                   :row
+                   [[account-id [:bind account-id]]
+                    [query-key [:bind query-key]]
+                    [query-text
+                     [:bind
+                      (chidu-store-search-observation-query-text observation)]
+                     :update]
+                    [filter-json
+                     [:bind
+                      (chidu-store-search-observation-filter-json observation)]
+                     :update]
+                    [query-state
+                     [:bind
+                      (chidu-store-search-observation-query-state observation)]
+                     :update]
+                    [email-state
+                     [:bind
+                      (chidu-store-search-observation-email-state observation)]
+                     :update]
+                    [cursor-remote-email-id
+                     [:bind
+                      (chidu-store-search-observation-cursor-remote-email-id
+                       observation)]
+                     :update]
+                    [revision [:bind next-revision] :update]
+                    [maybe-more
+                     [:bind
+                      (chidu-store-sqlite--integer-bool
+                       (chidu-store-search-observation-maybe-more-p
+                        observation))]
+                     :update]
+                    [is-stale 0 :update]
+                    [observed-change-seq [:bind change-seq] :update]]
+                   :on-conflict [account-id query-key]])
                 (chidu-sql-execute database
                   [:delete
                    :from jmap-search-projection-row
@@ -957,21 +957,21 @@ KEY extracts one summary observation row from each element of ROWS."
                  database account-id query-key start-ordinal rows change-seq)
                 (chidu-sql-execute database
                   [:update jmap-search-projection
-                           :set
-                           [[email-state
-                             [:bind
-                              (chidu-store-search-observation-email-state observation)]]
-                            [cursor-remote-email-id [:bind next-cursor]]
-                            [revision [:bind next-revision]]
-                            [maybe-more
-                             [:bind
-                              (chidu-store-sqlite--integer-bool
-                               (chidu-store-search-observation-maybe-more-p
-                                observation))]]
-                            [observed-change-seq [:bind change-seq]]]
-                           :where [:and
-                                   [:= account-id [:bind account-id]]
-                                   [:= query-key [:bind query-key]]]])))
+                   :set
+                   [[email-state
+                     [:bind
+                      (chidu-store-search-observation-email-state observation)]]
+                    [cursor-remote-email-id [:bind next-cursor]]
+                    [revision [:bind next-revision]]
+                    [maybe-more
+                     [:bind
+                      (chidu-store-sqlite--integer-bool
+                       (chidu-store-search-observation-maybe-more-p
+                        observation))]]
+                    [observed-change-seq [:bind change-seq]]]
+                   :where [:and
+                           [:= account-id [:bind account-id]]
+                           [:= query-key [:bind query-key]]]])))
             (chidu-store-sqlite--search-context
              state account-id query-key))))))))
 

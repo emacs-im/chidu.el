@@ -23,26 +23,26 @@
           (chidu-sql-execute
               (progn (setq events (append events '(database))) database)
             [:insert :into email
-                     :row
-                     [[account-id
-                       [:bind
-                        (progn (setq events (append events '(account))) account-id)]]
-                      [local-email-id
-                       [:bind
-                        (progn (setq events (append events '(email))) local-email-id)]]
-                      [subject
-                       [:bind
-                        (progn (setq events (append events '(subject))) "Hello")]]]])
+             :row
+             [[account-id
+               [:bind
+                (progn (setq events (append events '(account))) account-id)]]
+              [local-email-id
+               [:bind
+                (progn (setq events (append events '(email))) local-email-id)]]
+              [subject
+               [:bind
+                (progn (setq events (append events '(subject))) "Hello")]]]])
           (should (equal '(database account email subject) events))
           (should
            (equal
             '(("Hello"))
             (chidu-sql-select database
               [:select [subject]
-                       :from email
-                       :where [:and
-                               [:= account-id [:bind account-id]]
-                               [:= local-email-id [:bind local-email-id]]]])))
+               :from email
+               :where [:and
+                       [:= account-id [:bind account-id]]
+                       [:= local-email-id [:bind local-email-id]]]])))
           ;; Options may appear out of SQL order, but lexical holes are
           ;; evaluated once in the final placeholder order.
           (setq events nil)
@@ -51,19 +51,19 @@
             '(("Hello"))
             (chidu-sql-select database
               [:select [subject]
-                       :limit
-                       [:bind (progn (setq events (append events '(limit))) 1)]
-                       :where
-                       [:= account-id
-                           [:bind
-                            (progn (setq events (append events '(where))) account-id)]]
-                       :from email])))
+               :limit
+               [:bind (progn (setq events (append events '(limit))) 1)]
+               :where
+               [:= account-id
+                   [:bind
+                    (progn (setq events (append events '(where))) account-id)]]
+               :from email])))
           (should (equal '(where limit) events))
           (let ((statement
                  (chidu-sql
                   [:select [account-id local-email-id]
-                           :from email
-                           :order-by [[account-id :asc]]])))
+                   :from email
+                   :order-by [[account-id :asc]]])))
             (should (chidu-sql-statement-p statement))
             (should
              (equal
@@ -82,9 +82,9 @@
             '(("a") ("b"))
             (chidu-sql-select database
               [:select [value]
-                       :distinct t
-                       :from sample
-                       :order-by [[value :asc]]]))))
+               :distinct t
+               :from sample
+               :order-by [[value :asc]]]))))
       (sqlite-close database))))
 
 (ert-deftest chidu-sql-select-supports-aliased-subquery-relations ()
@@ -111,15 +111,15 @@
             '(("new") ("old"))
             (chidu-sql-select database
               [:select [recent:item-id]
-                       :from
-                       [:as
-                        [:select [item-id received-at]
-                                 :from email
-                                 :where [:= account-id [:bind account-id]]
-                                 :order-by [[received-at :desc]]
-                                 :limit [:bind limit]]
-                        recent]
-                       :order-by [[recent:received-at :desc]]]))))
+               :from
+               [:as
+                [:select [item-id received-at]
+                 :from email
+                 :where [:= account-id [:bind account-id]]
+                 :order-by [[received-at :desc]]
+                 :limit [:bind limit]]
+                recent]
+               :order-by [[recent:received-at :desc]]]))))
       (sqlite-close database))))
 
 (ert-deftest chidu-sql-map-lowers-joins-case-and-result-bindings ()
@@ -172,18 +172,18 @@
                  :from [:as sample sample]
                  :joins
                  [[:left [:as intent intent]
-                         :on [:and
-                              [:= intent:account-id sample:account-id]
-                              [:= intent:item-id sample:item-id]]]]
+                   :on [:and
+                        [:= intent:account-id sample:account-id]
+                        [:= intent:item-id sample:item-id]]]]
                  :where
                  [:and
                   [:= sample:account-id [:bind account-id]]
                   [:not-exists
                    [:select [1]
-                            :from [:as blocked blocked]
-                            :where [:and
-                                    [:= blocked:account-id sample:account-id]
-                                    [:= blocked:item-id sample:item-id]]]]]
+                    :from [:as blocked blocked]
+                    :where [:and
+                            [:= blocked:account-id sample:account-id]
+                            [:= blocked:item-id sample:item-id]]]]]
                  :order-by [[sample:item-id :asc]]]
               (list item-id effective-unread))))
           (should
@@ -191,25 +191,25 @@
             '(("c"))
             (chidu-sql-select database
               [:select [sample:item-id]
-                       :from [:as sample sample]
-                       :where
-                       [:in sample:item-id
-                            [:select [blocked:item-id]
-                                     :from [:as blocked blocked]
-                                     :where [:= blocked:account-id [:bind account-id]]]]])))
+               :from [:as sample sample]
+               :where
+               [:in sample:item-id
+                    [:select [blocked:item-id]
+                     :from [:as blocked blocked]
+                     :where [:= blocked:account-id [:bind account-id]]]]])))
           (should
            (equal
             '("a" 1)
             (chidu-sql-one database
                 [:select [[item-id item-id] [unread is-unread]]
-                         :from sample
-                         :where [:= item-id [:literal "a"]]]
+                 :from sample
+                 :where [:= item-id [:literal "a"]]]
               (list item-id unread))))
           (should-not
            (chidu-sql-one database
                [:select [[item-id item-id]]
-                        :from sample
-                        :where [:= item-id [:literal "missing"]]]
+                :from sample
+                :where [:= item-id [:literal "missing"]]]
              item-id)))
       (sqlite-close database))))
 
@@ -274,20 +274,20 @@
                  (mailbox-id name increment)
                  (chidu-sql-execute database
                    [:insert :into mailbox
-                            :row
-                            [[mailbox-id [:bind (observe 'insert-id mailbox-id)]]
-                             [account-id [:literal "account"]]
-                             [remote-mailbox-id [:literal "remote"]]
-                             [name
-                              [:bind (observe 'insert-name name)]
-                              [:update [:bind (observe 'update-name name)]]]
-                             [is-available 1 :update]
-                             [revision
-                              1
-                              [:update
-                               [:+ revision
-                                   [:bind (observe 'update-revision increment)]]]]]
-                            :on-conflict [account-id remote-mailbox-id]])))
+                    :row
+                    [[mailbox-id [:bind (observe 'insert-id mailbox-id)]]
+                     [account-id [:literal "account"]]
+                     [remote-mailbox-id [:literal "remote"]]
+                     [name
+                      [:bind (observe 'insert-name name)]
+                      [:update [:bind (observe 'update-name name)]]]
+                     [is-available 1 :update]
+                     [revision
+                      1
+                      [:update
+                       [:+ revision
+                           [:bind (observe 'update-revision increment)]]]]]
+                    :on-conflict [account-id remote-mailbox-id]])))
             (save "stable" "Inbox" 2)
             (should (= 4 calls))
             (should
@@ -338,7 +338,7 @@
   (should-error
    (chidu-sql-compile
     '[:select [id] :from table
-              :joins [[:outer other :on [:= other:id table:id]]]]))
+      :joins [[:outer other :on [:= other:id table:id]]]]))
   (should-error
    (chidu-sql-compile
     '[:select [[:case value [:else 0] [1 2]]] :from table]))
@@ -359,25 +359,25 @@
   (should-error
    (chidu-sql-compile
     '[:insert :into table
-              :row [[id [:bind id]] [id [:bind duplicate]]]]))
+      :row [[id [:bind id]] [id [:bind duplicate]]]]))
   (should-error
    (chidu-sql-compile
     '[:insert :into table :row [[id [:bind id] :update]]]))
   (should-error
    (chidu-sql-compile
     '[:insert :into table
-              :row [[id [:bind id]] [name [:bind name]]]
-              :on-conflict [id]]))
+      :row [[id [:bind id]] [name [:bind name]]]
+      :on-conflict [id]]))
   (should-error
    (chidu-sql-compile
     '[:insert :into table
-              :columns [id name] :values [[1 2]]
-              :on-conflict [id]]))
+      :columns [id name] :values [[1 2]]
+      :on-conflict [id]]))
   (should-error
    (chidu-sql-compile
     '[:insert :into table
-              :row [[id [:bind id] :invent]]
-              :on-conflict [id]]))
+      :row [[id [:bind id] :invent]]
+      :on-conflict [id]]))
   (should-error
    (chidu-sql-compile
     '[:select [id] :from table :where [:= id [:bind id]]]))
@@ -391,8 +391,8 @@
   (should-error
    (chidu-sql-compile-create-table
     '[:table bad
-             [:column parent-id :text
-                      [:references parent [id] :initially :deferred]]]))
+      [:column parent-id :text
+               [:references parent [id] :initially :deferred]]]))
   (should
    (equal "SELECT id FROM table WHERE (value IS NULL)"
           (chidu-sql-statement-sql
@@ -420,7 +420,7 @@
                    [:primary-key [account-id parent-id]]
                    [:unique [parent-id account-id]]]
            [:index child-phase :on child :columns [account-id phase] :unique t
-                   :where [:= is-stale 0]]])
+            :where [:= is-stale 0]]])
          (statements (chidu-sql-schema-statements schema))
          (database (sqlite-open)))
     (unwind-protect

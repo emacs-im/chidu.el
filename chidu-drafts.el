@@ -342,7 +342,7 @@
 
 (defun chidu-drafts--renderer (surface)
   "Create the native projection Renderer for SURFACE."
-  
+
   (appkit-projection-renderer-create
    :project-all (lambda (_surface _app model)
                   (chidu-drafts--project-rows model))

@@ -215,8 +215,7 @@
               (should (string-match-p "Example Corp" (buffer-string)))
               (should (string-match-p "Met at the JMAP workshop"
                                       (buffer-string))))))
-      (when (appkit-app-live-p app) (appkit-app-close app)
-            )
+      (when (appkit-app-live-p app) (appkit-app-close app))
       (dolist (buffer (list address-buffer list-buffer detail-buffer)) (when (buffer-live-p buffer) (kill-buffer buffer))))))
 
 (ert-deftest chidu-text-property-row-navigation-skips-current-row ()
@@ -274,7 +273,7 @@
                               kind document)))))
             (chidu-compose-to-contact endpoint card))
           (pcase-let ((`(,actual-app ,actual-account ,actual-identity
-                                     ,kind ,document)
+                         ,kind ,document)
                        captured))
             (should (eq actual-app app))
             (should (eq actual-account account))

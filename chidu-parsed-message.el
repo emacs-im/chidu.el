@@ -229,23 +229,23 @@ Refresh its remote Blob when REFRESH-EMPTY-P and CONTEXT has no message."
           (chidu-parsed-message-state-problem state) nil)
     (chidu-parsed-message--request-sync it)
     (chidu-surface-operation-start it 'parsed-message
-                                (lambda
-                                  (runtime success-function
-                                           error-function)
-                                  (chidu-refresh-parsed-blob runtime
-                                                             (chidu-parsed-message-state-account
-                                                              state)
-                                                             (chidu-parsed-message-state-blob-id
-                                                              state)
-                                                             success-function
-                                                             error-function
-                                                             chidu-email-body-value-byte-limit))
-                                (apply-partially
-                                 #'chidu-parsed-message--refreshed
-                                 it state)
-                                (apply-partially
-                                 #'chidu-parsed-message--failed it
-                                 state))))
+                                   (lambda
+                                     (runtime success-function
+                                              error-function)
+                                     (chidu-refresh-parsed-blob runtime
+                                                                (chidu-parsed-message-state-account
+                                                                 state)
+                                                                (chidu-parsed-message-state-blob-id
+                                                                 state)
+                                                                success-function
+                                                                error-function
+                                                                chidu-email-body-value-byte-limit))
+                                   (apply-partially
+                                    #'chidu-parsed-message--refreshed
+                                    it state)
+                                   (apply-partially
+                                    #'chidu-parsed-message--failed it
+                                    state))))
 
 (defun chidu-parsed-message--load-local (view &optional refresh-empty-p)
   "Load VIEW's local parsed Blob and refresh when REFRESH-EMPTY-P."

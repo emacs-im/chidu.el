@@ -31,16 +31,16 @@
     #'chidu-store-sqlite--identity-from-row
     (chidu-sql-select database
       [:select [identity-id remote-identity-id name email is-available]
-               :from jmap-identity
-               :where [:= account-id [:bind account-id]]
-               :order-by [[remote-identity-id :asc] [identity-id :asc]]]))))
+       :from jmap-identity
+       :where [:= account-id [:bind account-id]]
+       :order-by [[remote-identity-id :asc] [identity-id :asc]]]))))
 
 (defun chidu-store-sqlite--account-from-row (database row)
   "Decode Account ROW from DATABASE."
   (pcase-let
       ((`(,account-id ,remote-id ,name ,personal ,read-only
-                      ,primary-mail ,primary-submission ,available
-                      ,identity-state ,max-size-attachments ,capabilities-json)
+          ,primary-mail ,primary-submission ,available
+          ,identity-state ,max-size-attachments ,capabilities-json)
         row))
     (chidu-store-account-create
      :account-id account-id
@@ -79,12 +79,12 @@
   "Decode Endpoint ROW from DATABASE."
   (pcase-let
       ((`(,endpoint-id ,session-url ,login ,authentication
-                       ,session-username ,session-state ,api-url
-                       ,download-url ,upload-url ,event-source-url
-                       ,max-size-request ,max-size-upload ,max-objects-in-get
-                       ,max-objects-in-set
-                       ,primary-contacts-remote-account-id
-                       ,capabilities-json)
+          ,session-username ,session-state ,api-url
+          ,download-url ,upload-url ,event-source-url
+          ,max-size-request ,max-size-upload ,max-objects-in-get
+          ,max-objects-in-set
+          ,primary-contacts-remote-account-id
+          ,capabilities-json)
         row))
     (chidu-store-endpoint-create
      :endpoint-id endpoint-id
@@ -145,12 +145,12 @@
   "Decode Mailbox ROW."
   (pcase-let
       ((`(,mailbox-id ,remote-id ,name ,parent-id ,parent-remote-id ,role
-                      ,sort-order ,total-emails ,unread-emails
-                      ,total-threads ,unread-threads
-                      ,may-read-items ,may-add-items ,may-remove-items
-                      ,may-set-seen ,may-set-keywords ,may-create-child
-                      ,may-rename ,may-delete ,may-submit
-                      ,subscribed ,available)
+          ,sort-order ,total-emails ,unread-emails
+          ,total-threads ,unread-threads
+          ,may-read-items ,may-add-items ,may-remove-items
+          ,may-set-seen ,may-set-keywords ,may-create-child
+          ,may-rename ,may-delete ,may-submit
+          ,subscribed ,available)
         row))
     (chidu-store-mailbox-create
      :mailbox-id mailbox-id
@@ -203,8 +203,8 @@
                (caar
                 (chidu-sql-select database
                   [:select [endpoint-id]
-                           :from jmap-account
-                           :where [:= account-id [:bind account-id]]])))
+                   :from jmap-account
+                   :where [:= account-id [:bind account-id]]])))
               (endpoint (chidu-store-sqlite--endpoint database endpoint-id))
               (account
                (cl-find
@@ -218,10 +218,10 @@
              (car
               (chidu-sql-select database
                 [:select [state revision]
-                         :from jmap-type-checkpoint
-                         :where [:and
-                                 [:= account-id [:bind account-id]]
-                                 [:= data-type [:literal "Mailbox"]]]]))))
+                 :from jmap-type-checkpoint
+                 :where [:and
+                         [:= account-id [:bind account-id]]
+                         [:= data-type [:literal "Mailbox"]]]]))))
       (cons (car row) (cadr row))
     (cons nil 0)))
 
@@ -289,20 +289,20 @@
             (caar
              (chidu-sql-select database
                [:select [endpoint-id]
-                        :from jmap-endpoint
-                        :where [:and
-                                [:= session-url [:bind session-url]]
-                                [:= login [:bind login]]]])))
+                :from jmap-endpoint
+                :where [:and
+                        [:= session-url [:bind session-url]]
+                        [:= login [:bind login]]]])))
       (unless endpoint-id
         (setq endpoint-id (chidu-store-new-local-id)))
       (chidu-sql-execute database
         [:insert :into jmap-endpoint
-                 :row
-                 [[endpoint-id [:bind endpoint-id]]
-                  [session-url [:bind session-url]]
-                  [login [:bind login]]
-                  [authentication [:bind (symbol-name authentication)] :update]]
-                 :on-conflict [session-url login]])
+         :row
+         [[endpoint-id [:bind endpoint-id]]
+          [session-url [:bind session-url]]
+          [login [:bind login]]
+          [authentication [:bind (symbol-name authentication)] :update]]
+         :on-conflict [session-url login]])
       (chidu-store-sqlite--increment-change-seq database))
     (chidu-store-sqlite--endpoint database endpoint-id)))
 
@@ -312,10 +312,10 @@
   (or (caar
        (chidu-sql-select database
          [:select [account-id]
-                  :from jmap-account
-                  :where [:and
-                          [:= endpoint-id [:bind endpoint-id]]
-                          [:= remote-account-id [:bind remote-account-id]]]]))
+          :from jmap-account
+          :where [:and
+                  [:= endpoint-id [:bind endpoint-id]]
+                  [:= remote-account-id [:bind remote-account-id]]]]))
       (chidu-store-new-local-id)))
 
 (defun chidu-store-sqlite--identity-id
@@ -324,10 +324,10 @@
   (or (caar
        (chidu-sql-select database
          [:select [identity-id]
-                  :from jmap-identity
-                  :where [:and
-                          [:= account-id [:bind account-id]]
-                          [:= remote-identity-id [:bind remote-identity-id]]]]))
+          :from jmap-identity
+          :where [:and
+                  [:= account-id [:bind account-id]]
+                  [:= remote-identity-id [:bind remote-identity-id]]]]))
       (chidu-store-new-local-id)))
 
 (defun chidu-store-sqlite--save-identity
@@ -345,26 +345,26 @@
            database account-id remote-id)))
     (chidu-sql-execute database
       [:insert :into jmap-identity
-               :row
-               [[identity-id [:bind identity-id]]
-                [account-id [:bind account-id]]
-                [remote-identity-id [:bind remote-id]]
-                [name [:bind (or (chidu-store-identity-observation-name observation)
-                                 "")] :update]
-                [email
-                 [:bind
-                  (chidu-store-validate-id
-                   (chidu-store-identity-observation-email observation)
-                   "Identity email")]
-                 :update]
-                [reply-to-json nil :update]
-                [bcc-json nil :update]
-                [text-signature [:literal ""] :update]
-                [html-signature [:literal ""] :update]
-                [may-delete 0 :update]
-                [is-available 1 :update]
-                [observed-change-seq [:bind change-seq] :update]]
-               :on-conflict [account-id remote-identity-id]])))
+       :row
+       [[identity-id [:bind identity-id]]
+        [account-id [:bind account-id]]
+        [remote-identity-id [:bind remote-id]]
+        [name [:bind (or (chidu-store-identity-observation-name observation)
+                         "")] :update]
+        [email
+         [:bind
+          (chidu-store-validate-id
+           (chidu-store-identity-observation-email observation)
+           "Identity email")]
+         :update]
+        [reply-to-json nil :update]
+        [bcc-json nil :update]
+        [text-signature [:literal ""] :update]
+        [html-signature [:literal ""] :update]
+        [may-delete 0 :update]
+        [is-available 1 :update]
+        [observed-change-seq [:bind change-seq] :update]]
+       :on-conflict [account-id remote-identity-id]])))
 
 (defun chidu-store-sqlite--save-account
     (database endpoint-id observation change-seq)
@@ -381,60 +381,60 @@
            database endpoint-id remote-id)))
     (chidu-sql-execute database
       [:insert :into jmap-account
-               :row
-               [[account-id [:bind account-id]]
-                [endpoint-id [:bind endpoint-id]]
-                [remote-account-id [:bind remote-id]]
-                [name [:bind (or (chidu-store-account-observation-name observation)
-                                 "")] :update]
-                [is-personal
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-account-observation-personal-p observation))]
-                 :update]
-                [is-read-only
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-account-observation-read-only-p observation))]
-                 :update]
-                [is-primary-mail
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-account-observation-primary-mail-p observation))]
-                 :update]
-                [is-primary-submission
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-account-observation-primary-submission-p observation))]
-                 :update]
-                [is-available 1 :update]
-                [capabilities-json
-                 [:bind
-                  (chidu-store-sqlite--capability-json
-                   (chidu-store-account-observation-capabilities observation)
-                   "Account capabilities")]
-                 :update]
-                [extra-properties-json [:literal "{}"] :update]
-                [identity-state
-                 [:bind (chidu-store-account-observation-identity-state observation)]
-                 :update]
-                [max-size-attachments-per-email
-                 [:bind
-                  (let ((value
-                         (chidu-store-account-observation-max-size-attachments-per-email
-                          observation)))
-                    (when (and value
-                               (not (and (integerp value) (>= value 0))))
-                      (signal 'chidu-invariant-error
-                              '("Account maxSizeAttachmentsPerEmail is invalid")))
-                    value)]
-                 :update]
-                [observed-change-seq [:bind change-seq] :update]]
-               :on-conflict [endpoint-id remote-account-id]])
+       :row
+       [[account-id [:bind account-id]]
+        [endpoint-id [:bind endpoint-id]]
+        [remote-account-id [:bind remote-id]]
+        [name [:bind (or (chidu-store-account-observation-name observation)
+                         "")] :update]
+        [is-personal
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-account-observation-personal-p observation))]
+         :update]
+        [is-read-only
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-account-observation-read-only-p observation))]
+         :update]
+        [is-primary-mail
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-account-observation-primary-mail-p observation))]
+         :update]
+        [is-primary-submission
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-account-observation-primary-submission-p observation))]
+         :update]
+        [is-available 1 :update]
+        [capabilities-json
+         [:bind
+          (chidu-store-sqlite--capability-json
+           (chidu-store-account-observation-capabilities observation)
+           "Account capabilities")]
+         :update]
+        [extra-properties-json [:literal "{}"] :update]
+        [identity-state
+         [:bind (chidu-store-account-observation-identity-state observation)]
+         :update]
+        [max-size-attachments-per-email
+         [:bind
+          (let ((value
+                 (chidu-store-account-observation-max-size-attachments-per-email
+                  observation)))
+            (when (and value
+                       (not (and (integerp value) (>= value 0))))
+              (signal 'chidu-invariant-error
+                      '("Account maxSizeAttachmentsPerEmail is invalid")))
+            value)]
+         :update]
+        [observed-change-seq [:bind change-seq] :update]]
+       :on-conflict [endpoint-id remote-account-id]])
     (chidu-sql-execute database
       [:update jmap-identity
-               :set [[is-available 0]]
-               :where [:= account-id [:bind account-id]]])
+       :set [[is-available 0]]
+       :where [:= account-id [:bind account-id]]])
     (cl-loop
      for identity across
      (chidu-store-account-observation-identities observation)
@@ -448,10 +448,10 @@
   (or (caar
        (chidu-sql-select database
          [:select [mailbox-id]
-                  :from jmap-mailbox
-                  :where [:and
-                          [:= account-id [:bind account-id]]
-                          [:= remote-mailbox-id [:bind remote-mailbox-id]]]]))
+          :from jmap-mailbox
+          :where [:and
+                  [:= account-id [:bind account-id]]
+                  [:= remote-mailbox-id [:bind remote-mailbox-id]]]]))
       (chidu-store-new-local-id)))
 
 (defun chidu-store-sqlite--save-mailbox
@@ -464,81 +464,81 @@
          (rights (chidu-store-mailbox-observation-rights item)))
     (chidu-sql-execute database
       [:insert :into jmap-mailbox
-               :row
-               [[mailbox-id [:bind (gethash remote-id remote-to-local)]]
-                [account-id [:bind account-id]]
-                [remote-mailbox-id [:bind remote-id]]
-                [name [:bind (chidu-store-mailbox-observation-name item)] :update]
-                [parent-mailbox-id
-                 [:bind
-                  (and parent-remote-id
-                       (gethash parent-remote-id remote-to-local))]
-                 :update]
-                [parent-remote-mailbox-id [:bind parent-remote-id] :update]
-                [role [:bind (chidu-store-mailbox-observation-role item)] :update]
-                [sort-order
-                 [:bind (chidu-store-mailbox-observation-sort-order item)] :update]
-                [total-emails
-                 [:bind (chidu-store-mailbox-observation-total-emails item)] :update]
-                [unread-emails
-                 [:bind (chidu-store-mailbox-observation-unread-emails item)] :update]
-                [total-threads
-                 [:bind (chidu-store-mailbox-observation-total-threads item)] :update]
-                [unread-threads
-                 [:bind (chidu-store-mailbox-observation-unread-threads item)] :update]
-                [may-read-items
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-read-items-p rights))]
-                 :update]
-                [may-add-items
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-add-items-p rights))]
-                 :update]
-                [may-remove-items
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-remove-items-p rights))]
-                 :update]
-                [may-set-seen
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-set-seen-p rights))]
-                 :update]
-                [may-set-keywords
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-set-keywords-p rights))]
-                 :update]
-                [may-create-child
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-create-child-p rights))]
-                 :update]
-                [may-rename
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-rename-p rights))]
-                 :update]
-                [may-delete
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-delete-p rights))]
-                 :update]
-                [may-submit
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-rights-may-submit-p rights))]
-                 :update]
-                [is-subscribed
-                 [:bind
-                  (chidu-store-sqlite--integer-bool
-                   (chidu-store-mailbox-observation-subscribed-p item))]
-                 :update]
-                [is-available 1 :update]
-                [observed-change-seq [:bind change-seq] :update]]
-               :on-conflict [account-id remote-mailbox-id]])))
+       :row
+       [[mailbox-id [:bind (gethash remote-id remote-to-local)]]
+        [account-id [:bind account-id]]
+        [remote-mailbox-id [:bind remote-id]]
+        [name [:bind (chidu-store-mailbox-observation-name item)] :update]
+        [parent-mailbox-id
+         [:bind
+          (and parent-remote-id
+               (gethash parent-remote-id remote-to-local))]
+         :update]
+        [parent-remote-mailbox-id [:bind parent-remote-id] :update]
+        [role [:bind (chidu-store-mailbox-observation-role item)] :update]
+        [sort-order
+         [:bind (chidu-store-mailbox-observation-sort-order item)] :update]
+        [total-emails
+         [:bind (chidu-store-mailbox-observation-total-emails item)] :update]
+        [unread-emails
+         [:bind (chidu-store-mailbox-observation-unread-emails item)] :update]
+        [total-threads
+         [:bind (chidu-store-mailbox-observation-total-threads item)] :update]
+        [unread-threads
+         [:bind (chidu-store-mailbox-observation-unread-threads item)] :update]
+        [may-read-items
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-read-items-p rights))]
+         :update]
+        [may-add-items
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-add-items-p rights))]
+         :update]
+        [may-remove-items
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-remove-items-p rights))]
+         :update]
+        [may-set-seen
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-set-seen-p rights))]
+         :update]
+        [may-set-keywords
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-set-keywords-p rights))]
+         :update]
+        [may-create-child
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-create-child-p rights))]
+         :update]
+        [may-rename
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-rename-p rights))]
+         :update]
+        [may-delete
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-delete-p rights))]
+         :update]
+        [may-submit
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-rights-may-submit-p rights))]
+         :update]
+        [is-subscribed
+         [:bind
+          (chidu-store-sqlite--integer-bool
+           (chidu-store-mailbox-observation-subscribed-p item))]
+         :update]
+        [is-available 1 :update]
+        [observed-change-seq [:bind change-seq] :update]]
+       :on-conflict [account-id remote-mailbox-id]])))
 
 (defun chidu-store-sqlite--observe-mailbox-snapshot (state operation)
   "CAS-commit complete Mailbox snapshot OPERATION into SQLite STATE."
@@ -578,8 +578,8 @@
                 (row
                  (chidu-sql-select database
                    [:select [remote-mailbox-id mailbox-id]
-                            :from jmap-mailbox
-                            :where [:= account-id [:bind account-id]]]))
+                    :from jmap-mailbox
+                    :where [:= account-id [:bind account-id]]]))
               (puthash (car row) (cadr row) remote-to-local))
             (cl-loop
              for item across validated
@@ -596,9 +596,9 @@
                      (chidu-store-sqlite--increment-change-seq database)))
                 (chidu-sql-execute database
                   [:update jmap-mailbox
-                           :set [[is-available 0]
-                                 [observed-change-seq [:bind change-seq]]]
-                           :where [:= account-id [:bind account-id]]])
+                   :set [[is-available 0]
+                         [observed-change-seq [:bind change-seq]]]
+                   :where [:= account-id [:bind account-id]]])
                 (cl-loop
                  for item across validated
                  do
@@ -606,15 +606,15 @@
                   database account-id item remote-to-local change-seq))
                 (chidu-sql-execute database
                   [:insert :into jmap-type-checkpoint
-                           :row
-                           [[account-id [:bind account-id]]
-                            [data-type [:literal "Mailbox"]]
-                            [state [:bind state-token] :update]
-                            [revision
-                             1
-                             [:update [:+ jmap-type-checkpoint:revision 1]]]
-                            [observed-change-seq [:bind change-seq] :update]]
-                           :on-conflict [account-id data-type]])))
+                   :row
+                   [[account-id [:bind account-id]]
+                    [data-type [:literal "Mailbox"]]
+                    [state [:bind state-token] :update]
+                    [revision
+                     1
+                     [:update [:+ jmap-type-checkpoint:revision 1]]]
+                    [observed-change-seq [:bind change-seq] :update]]
+                   :on-conflict [account-id data-type]])))
             (chidu-store-sqlite--mailbox-context state account-id))))))))
 
 (defun chidu-store-sqlite--save-session
@@ -622,62 +622,62 @@
   "Save Session OBSERVATION for ENDPOINT-ID in DATABASE."
   (chidu-sql-execute database
     [:update jmap-endpoint
-             :set
-             [[session-username
-               [:bind
-                (chidu-store-validate-nonempty-string
-                 (chidu-store-session-observation-username observation)
-                 "Session username")]]
-              [session-state
-               [:bind
-                (chidu-store-validate-nonempty-string
-                 (chidu-store-session-observation-state observation)
-                 "Session state")]]
-              [api-url
-               [:bind
-                (chidu-store-normalize-session-url
-                 (chidu-store-session-observation-api-url observation))]]
-              [download-url
-               [:bind (chidu-store-session-observation-download-url observation)]]
-              [upload-url
-               [:bind (chidu-store-session-observation-upload-url observation)]]
-              [event-source-url
-               [:bind (chidu-store-session-observation-event-source-url observation)]]
-              [max-size-request
-               [:bind
-                (chidu-store-validate-positive-integer
-                 (chidu-store-session-observation-max-size-request observation)
-                 "Session maxSizeRequest")]]
-              [max-size-upload
-               [:bind
-                (let ((value
-                       (chidu-store-session-observation-max-size-upload observation)))
-                  (when value
-                    (chidu-store-validate-positive-integer
-                     value "Session maxSizeUpload"))
-                  value)]]
-              [max-objects-in-get
-               [:bind
-                (chidu-store-validate-positive-integer
-                 (chidu-store-session-observation-max-objects-in-get observation)
-                 "Session maxObjectsInGet")]]
-              [max-objects-in-set
-               [:bind
-                (chidu-store-validate-positive-integer
-                 (chidu-store-session-observation-max-objects-in-set observation)
-                 "Session maxObjectsInSet")]]
-              [primary-contacts-remote-account-id
-               [:bind
-                (chidu-store-session-observation-primary-contacts-remote-account-id
-                 observation)]]
-              [capabilities-json
-               [:bind
-                (chidu-store-sqlite--capability-json
-                 (chidu-store-session-observation-capabilities observation)
-                 "Session capabilities")]]
-              [extra-properties-json [:literal "{}"]]
-              [observed-change-seq [:bind change-seq]]]
-             :where [:= endpoint-id [:bind endpoint-id]]]))
+     :set
+     [[session-username
+       [:bind
+        (chidu-store-validate-nonempty-string
+         (chidu-store-session-observation-username observation)
+         "Session username")]]
+      [session-state
+       [:bind
+        (chidu-store-validate-nonempty-string
+         (chidu-store-session-observation-state observation)
+         "Session state")]]
+      [api-url
+       [:bind
+        (chidu-store-normalize-session-url
+         (chidu-store-session-observation-api-url observation))]]
+      [download-url
+       [:bind (chidu-store-session-observation-download-url observation)]]
+      [upload-url
+       [:bind (chidu-store-session-observation-upload-url observation)]]
+      [event-source-url
+       [:bind (chidu-store-session-observation-event-source-url observation)]]
+      [max-size-request
+       [:bind
+        (chidu-store-validate-positive-integer
+         (chidu-store-session-observation-max-size-request observation)
+         "Session maxSizeRequest")]]
+      [max-size-upload
+       [:bind
+        (let ((value
+               (chidu-store-session-observation-max-size-upload observation)))
+          (when value
+            (chidu-store-validate-positive-integer
+             value "Session maxSizeUpload"))
+          value)]]
+      [max-objects-in-get
+       [:bind
+        (chidu-store-validate-positive-integer
+         (chidu-store-session-observation-max-objects-in-get observation)
+         "Session maxObjectsInGet")]]
+      [max-objects-in-set
+       [:bind
+        (chidu-store-validate-positive-integer
+         (chidu-store-session-observation-max-objects-in-set observation)
+         "Session maxObjectsInSet")]]
+      [primary-contacts-remote-account-id
+       [:bind
+        (chidu-store-session-observation-primary-contacts-remote-account-id
+         observation)]]
+      [capabilities-json
+       [:bind
+        (chidu-store-sqlite--capability-json
+         (chidu-store-session-observation-capabilities observation)
+         "Session capabilities")]]
+      [extra-properties-json [:literal "{}"]]
+      [observed-change-seq [:bind change-seq]]]
+     :where [:= endpoint-id [:bind endpoint-id]]]))
 
 (defun chidu-store-sqlite--observe-session (state operation)
   "Apply Session observation OPERATION to SQLite STATE."
@@ -701,16 +701,16 @@
            database endpoint-id observation change-seq)
           (chidu-sql-execute database
             [:update jmap-account
-                     :set [[is-available 0]]
-                     :where [:= endpoint-id [:bind endpoint-id]]])
+             :set [[is-available 0]]
+             :where [:= endpoint-id [:bind endpoint-id]]])
           (chidu-sql-execute database
             [:update jmap-identity
-                     :set [[is-available 0]]
-                     :where
-                     [:in account-id
-                          [:select [account-id]
-                                   :from jmap-account
-                                   :where [:= endpoint-id [:bind endpoint-id]]]]])
+             :set [[is-available 0]]
+             :where
+             [:in account-id
+                  [:select [account-id]
+                   :from jmap-account
+                   :where [:= endpoint-id [:bind endpoint-id]]]]])
           (cl-loop
            for account across
            (chidu-store-session-observation-accounts observation)

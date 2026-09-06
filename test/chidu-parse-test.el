@@ -114,40 +114,40 @@
     (puthash
      "text"
      '(:value "Parsed plain body"
-              :isEncodingProblem :json-false :isTruncated :json-false)
+       :isEncodingProblem :json-false :isTruncated :json-false)
      body-values)
     (puthash
      "html"
      '(:value "<p>Parsed HTML body</p>"
-              :isEncodingProblem :json-false :isTruncated t)
+       :isEncodingProblem :json-false :isTruncated t)
      body-values)
     (puthash
      "root-blob"
      `(:messageId ["attached@example.test"]
-                  :inReplyTo ["parent@example.test"]
-                  :references ["root@example.test" "parent@example.test"]
-                  :sender :json-null
-                  :from [(:name "Alice" :email "alice@example.test")]
-                  :to [(:name :json-null :email "")]
-                  :cc :json-null :bcc :json-null :replyTo :json-null
-                  :subject "Attached subject"
-                  :sentAt "2026-08-26T01:02:03Z"
-                  :preview "Attached preview"
-                  :bodyValues ,body-values
-                  :textBody [(:partId "text" :type "text/plain")]
-                  :htmlBody [(:partId "html" :type "text/html")]
-                  :attachments
-                  [(:partId "nested" :blobId "nested-blob" :size 42
-                            :name "nested.eml" :type "message/rfc822"
-                            :charset :json-null :disposition "attachment"
-                            :cid :json-null :language ["en"] :location :json-null)])
+       :inReplyTo ["parent@example.test"]
+       :references ["root@example.test" "parent@example.test"]
+       :sender :json-null
+       :from [(:name "Alice" :email "alice@example.test")]
+       :to [(:name :json-null :email "")]
+       :cc :json-null :bcc :json-null :replyTo :json-null
+       :subject "Attached subject"
+       :sentAt "2026-08-26T01:02:03Z"
+       :preview "Attached preview"
+       :bodyValues ,body-values
+       :textBody [(:partId "text" :type "text/plain")]
+       :htmlBody [(:partId "html" :type "text/html")]
+       :attachments
+       [(:partId "nested" :blobId "nested-blob" :size 42
+         :name "nested.eml" :type "message/rfc822"
+         :charset :json-null :disposition "attachment"
+         :cid :json-null :language ["en"] :location :json-null)])
      parsed)
     (let* ((observation
             (chidu-jmap-parse--decode
              (chidu-store-test--method-response
               "Email/parse" "email-parse"
               `(:accountId "remote-account"
-                           :parsed ,parsed))
+                :parsed ,parsed))
              "remote-account" "root-blob" profile))
            (message (chidu-store-parsed-blob-observation-message observation))
            (body (chidu-store-parsed-message-body message))
@@ -182,9 +182,9 @@
       (chidu-store-test--method-response
        "Email/parse" "email-parse"
        `(:accountId "remote-account"
-                    :parsed ,parsed
-                    :notParsable ["root-blob"]
-                    :notFound :json-null))
+         :parsed ,parsed
+         :notParsable ["root-blob"]
+         :notFound :json-null))
       "remote-account" "root-blob" profile)
      :type 'chidu-jmap-error)))
 

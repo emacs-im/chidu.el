@@ -99,8 +99,8 @@
            [:primary-key [account-id local-email-id ordinal]]
            [:unique [account-id local-email-id part-id]]
            [:foreign-key [account-id local-email-id]
-                         :references jmap-email-body [account-id local-email-id]
-                         :on-delete :cascade]]
+            :references jmap-email-body [account-id local-email-id]
+            :on-delete :cascade]]
    [:table jmap-email-checkpoint
            [:column account-id :text :primary-key [:references jmap-account [account-id] :on-delete :cascade]]
            [:column phase :text :not-null [:check [:in phase [[:literal "enumerating"] [:literal "membership-catchup"] [:literal "hydrating"] [:literal "metadata-catchup"] [:literal "activating"] [:literal "live"]]]]]
@@ -171,8 +171,8 @@
            [:column remote-mailbox-id :text :not-null [:check [:> [:call length remote-mailbox-id] 0]]]
            [:primary-key [generation-id local-email-id remote-mailbox-id]]
            [:foreign-key [account-id generation-id local-email-id]
-                         :references jmap-email-generation-member [account-id generation-id local-email-id]
-                         :on-delete :cascade]]
+            :references jmap-email-generation-member [account-id generation-id local-email-id]
+            :on-delete :cascade]]
    [:table jmap-email-generation-keyword
            [:column account-id :text :not-null]
            [:column generation-id :text :not-null]
@@ -180,8 +180,8 @@
            [:column keyword :text :not-null [:check [:> [:call length keyword] 0]]]
            [:primary-key [generation-id local-email-id keyword]]
            [:foreign-key [account-id generation-id local-email-id]
-                         :references jmap-email-generation-member [account-id generation-id local-email-id]
-                         :on-delete :cascade]]
+            :references jmap-email-generation-member [account-id generation-id local-email-id]
+            :on-delete :cascade]]
    [:table jmap-email-record
            [:column local-email-id :text :primary-key [:check [:> [:call length local-email-id] 0]]]
            [:column account-id :text :not-null [:references jmap-account [account-id] :on-delete :cascade]]
@@ -212,8 +212,8 @@
            [:column observed-change-seq :integer :not-null [:check [:>= observed-change-seq 0]]]
            [:primary-key [account-id local-email-id]]
            [:foreign-key [account-id local-email-id]
-                         :references jmap-email-record [account-id local-email-id]
-                         :on-delete :cascade]]
+            :references jmap-email-record [account-id local-email-id]
+            :on-delete :cascade]]
    [:table jmap-email-preview
            [:column account-id :text :not-null]
            [:column local-email-id :text :not-null]
@@ -221,8 +221,8 @@
            [:column observed-change-seq :integer :not-null [:check [:>= observed-change-seq 0]]]
            [:primary-key [account-id local-email-id]]
            [:foreign-key [account-id local-email-id]
-                         :references jmap-email-record [account-id local-email-id]
-                         :on-delete :cascade]]
+            :references jmap-email-record [account-id local-email-id]
+            :on-delete :cascade]]
    [:table jmap-endpoint
            [:column endpoint-id :text :primary-key]
            [:column session-url :text :not-null]
@@ -310,15 +310,15 @@
              [:and [:is-not base-remote-email-id nil]
                    [:is-not base-remote-blob-id nil]]]]
            [:foreign-key [account-id]
-                         :references jmap-account [account-id] :on-delete :cascade]
+            :references jmap-account [account-id] :on-delete :cascade]
            [:foreign-key [account-id identity-id]
-                         :references jmap-identity [account-id identity-id]]]
+            :references jmap-identity [account-id identity-id]]]
    [:table chidu-compose-resource
            [:column resource-id :text :primary-key
                     [:check [:> [:call length resource-id] 0]]]
            [:column workspace-id :text :not-null
                     [:references chidu-compose-workspace [workspace-id]
-                                 :on-delete :cascade]]
+                     :on-delete :cascade]]
            [:column name :text
                     [:check [:or [:is name nil] [:> [:call length name] 0]]]]
            [:column media-type :text :not-null
@@ -348,7 +348,7 @@
                     [:check [:> [:call length attempt-id] 0]]]
            [:column workspace-id :text :not-null
                     [:references chidu-compose-workspace [workspace-id]
-                                 :on-delete :cascade]]
+                     :on-delete :cascade]]
            [:column account-id :text :not-null]
            [:column identity-id :text :not-null]
            [:column drafts-mailbox-id :text :not-null]
@@ -380,9 +380,9 @@
              [:and [:is-not predecessor-remote-email-id nil]
                    [:is-not predecessor-remote-blob-id nil]]]]
            [:foreign-key [account-id identity-id]
-                         :references jmap-identity [account-id identity-id]]
+            :references jmap-identity [account-id identity-id]]
            [:foreign-key [account-id drafts-mailbox-id]
-                         :references jmap-mailbox [account-id mailbox-id]]]
+            :references jmap-mailbox [account-id mailbox-id]]]
    [:table jmap-mailbox
            [:column mailbox-id :text :primary-key [:check [:> [:call length mailbox-id] 0]]]
            [:column account-id :text :not-null [:references jmap-account [account-id] :on-delete :cascade]]
@@ -488,8 +488,8 @@
            [:primary-key [account-id source-blob-id profile-version ordinal]]
            [:unique [account-id source-blob-id profile-version part-id]]
            [:foreign-key [account-id source-blob-id profile-version]
-                         :references jmap-parsed-blob [account-id blob-id profile-version]
-                         :on-delete :cascade]]
+            :references jmap-parsed-blob [account-id blob-id profile-version]
+            :on-delete :cascade]]
    [:table jmap-search-projection
            [:column account-id :text :not-null [:references jmap-account [account-id] :on-delete :cascade]]
            [:column query-key :text :not-null [:check [:> [:call length query-key] 0]]]
@@ -582,33 +582,33 @@
            [:column change-seq :integer :not-null [:check [:>= change-seq 0]]]]
    [:index jmap-account-endpoint :on jmap-account :columns [endpoint-id is-available]]
    [:index jmap-email-one-active-generation :on jmap-email-generation
-           :columns [account-id] :unique t
-           :where [:= lifecycle [:literal "active"]]]
+    :columns [account-id] :unique t
+    :where [:= lifecycle [:literal "active"]]]
    [:index jmap-email-one-building-generation :on jmap-email-generation
-           :columns [account-id] :unique t
-           :where [:= lifecycle [:literal "building"]]]
+    :columns [account-id] :unique t
+    :where [:= lifecycle [:literal "building"]]]
    [:index jmap-email-generation-mailbox-by-mailbox
-           :on jmap-email-generation-mailbox
-           :columns [account-id generation-id remote-mailbox-id local-email-id]]
+    :on jmap-email-generation-mailbox
+    :columns [account-id generation-id remote-mailbox-id local-email-id]]
    [:index jmap-email-metadata-recent
-           :on jmap-email-metadata
-           :columns [account-id received-at local-email-id]]
+    :on jmap-email-metadata
+    :columns [account-id received-at local-email-id]]
    [:index jmap-identity-account :on jmap-identity :columns [account-id is-available]]
    [:index jmap-identity-account-local :on jmap-identity
-           :columns [account-id identity-id] :unique t]
+    :columns [account-id identity-id] :unique t]
    [:index chidu-compose-workspace-updated :on chidu-compose-workspace
-           :columns [updated-change-seq workspace-id]]
+    :columns [updated-change-seq workspace-id]]
    [:index chidu-compose-workspace-remote-draft
-           :on chidu-compose-workspace
-           :columns [account-id base-remote-email-id]
-           :unique t]
+    :on chidu-compose-workspace
+    :columns [account-id base-remote-email-id]
+    :unique t]
    [:index chidu-compose-resource-workspace
-           :on chidu-compose-resource
-           :columns [workspace-id resource-id]]
+    :on chidu-compose-resource
+    :columns [workspace-id resource-id]]
    [:index chidu-draft-publish-phase :on chidu-draft-publish-attempt
-           :columns [phase updated-change-seq attempt-id]]
+    :columns [phase updated-change-seq attempt-id]]
    [:index chidu-draft-publish-workspace :on chidu-draft-publish-attempt
-           :columns [workspace-id phase created-change-seq attempt-id]]
+    :columns [workspace-id phase created-change-seq attempt-id]]
    [:index jmap-mailbox-account :on jmap-mailbox :columns [account-id is-available]]
    [:index jmap-mailbox-account-local :on jmap-mailbox :columns [account-id mailbox-id] :unique t]
    [:index jmap-mailbox-move-target-account :on jmap-mailbox-move-target :columns [account-id phase accepted-change-seq]]
@@ -618,9 +618,9 @@
 (defconst chidu-store-sqlite--metadata-present-query
   (chidu-sql
    [:select [1]
-            :from store-metadata
-            :where [:= singleton 1]
-            :limit 1])
+    :from store-metadata
+    :where [:= singleton 1]
+    :limit 1])
   "Query proving that Store metadata has been initialized.")
 
 (defvar chidu-store-sqlite--expected-schema-snapshot-cache nil
@@ -640,10 +640,10 @@
     (let ((store-id (chidu-store-new-local-id)))
       (chidu-sql-execute database
         [:insert :into store-metadata
-                 :row
-                 [[singleton 1]
-                  [store-id [:bind store-id]]
-                  [change-seq 0]]]))))
+         :row
+         [[singleton 1]
+          [store-id [:bind store-id]]
+          [change-seq 0]]]))))
 
 (defun chidu-store-sqlite--pragma-identifier (value)
   "Return validated SQLite pragma identifier VALUE."

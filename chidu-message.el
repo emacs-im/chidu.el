@@ -284,20 +284,20 @@ Refresh its remote body when REFRESH-EMPTY-P and CONTEXT has no body."
           (chidu-message-state-message state) nil)
     (chidu-message--request-sync it)
     (chidu-surface-operation-start it 'body
-                                (lambda
-                                  (runtime success-function
-                                           error-function)
-                                  (chidu-refresh-email-body runtime
-                                                            (chidu-message-state-account
-                                                             state)
-                                                            (chidu-message-state-row
-                                                             state)
-                                                            success-function
-                                                            error-function))
-                                (apply-partially
-                                 #'chidu-message--refreshed it state)
-                                (apply-partially
-                                 #'chidu-message--failed it state))))
+                                   (lambda
+                                     (runtime success-function
+                                              error-function)
+                                     (chidu-refresh-email-body runtime
+                                                               (chidu-message-state-account
+                                                                state)
+                                                               (chidu-message-state-row
+                                                                state)
+                                                               success-function
+                                                               error-function))
+                                   (apply-partially
+                                    #'chidu-message--refreshed it state)
+                                   (apply-partially
+                                    #'chidu-message--failed it state))))
 
 (defun chidu-message--load-local (view &optional refresh-empty-p)
   "Load VIEW's local body and refresh when REFRESH-EMPTY-P."

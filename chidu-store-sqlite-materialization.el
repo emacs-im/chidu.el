@@ -20,7 +20,7 @@
   "Decode attachment ROW from SQLite for CONTEXT."
   (pcase-let
       ((`(,part-id ,blob-id ,size ,name ,media-type ,charset
-                   ,disposition ,cid ,language-json ,location)
+          ,disposition ,cid ,language-json ,location)
         row))
     (chidu-store-email-attachment-create
      :part-id part-id
@@ -67,10 +67,10 @@ LOCAL-EMAIL-ID and REMOTE-EMAIL-ID must name the same Email."
                (caar
                 (chidu-sql-select database
                   [:select [remote-email-id]
-                           :from jmap-email-record
-                           :where [:and
-                                   [:= account-id [:bind account-id]]
-                                   [:= local-email-id [:bind local-email-id]]]])))))
+                   :from jmap-email-record
+                   :where [:and
+                           [:= account-id [:bind account-id]]
+                           [:= local-email-id [:bind local-email-id]]]])))))
     (cond
      ((null location)
       (chidu-result-failure-create
@@ -285,13 +285,13 @@ ACCOUNT-ID and PROFILE-VERSION select the exact materialization."
         :from [:as jmap-conversation-row row]
         :joins
         [[:inner [:as jmap-email-record email]
-                 :on [:and
-                      [:= email:account-id row:account-id]
-                      [:= email:local-email-id row:local-email-id]]]
+          :on [:and
+               [:= email:account-id row:account-id]
+               [:= email:local-email-id row:local-email-id]]]
          [:left [:as jmap-seen-intent intent]
-                :on [:and
-                     [:= intent:account-id row:account-id]
-                     [:= intent:local-email-id row:local-email-id]]]]
+          :on [:and
+               [:= intent:account-id row:account-id]
+               [:= intent:local-email-id row:local-email-id]]]]
         :where [:and
                 [:= row:account-id [:bind account-id]]
                 [:= row:remote-thread-id [:bind remote-thread-id]]]
@@ -423,40 +423,40 @@ REMOTE-THREAD-ID selects the projection."
                    (chidu-store-sqlite--increment-change-seq database)))
               (chidu-sql-execute database
                 [:insert :into jmap-email-body
-                         :row
-                         [[account-id [:bind account-id]]
-                          [local-email-id [:bind local-email-id]]
-                          [email-state
-                           [:bind
-                            (chidu-store-email-body-observation-email-state observation)]
-                           :update]
-                          [text-content
-                           [:bind
-                            (chidu-store-email-body-observation-text-content observation)]
-                           :update]
-                          [html-content
-                           [:bind
-                            (chidu-store-email-body-observation-html-content observation)]
-                           :update]
-                          [revision [:bind (1+ actual-revision)] :update]
-                          [is-truncated
-                           [:bind
-                            (chidu-store-sqlite--integer-bool
-                             (chidu-store-email-body-observation-truncated-p observation))]
-                           :update]
-                          [encoding-problem
-                           [:bind
-                            (chidu-store-sqlite--integer-bool
-                             (chidu-store-email-body-observation-encoding-problem-p
-                              observation))]
-                           :update]
-                          [observed-change-seq [:bind change-seq] :update]]
-                         :on-conflict [account-id local-email-id]])
+                 :row
+                 [[account-id [:bind account-id]]
+                  [local-email-id [:bind local-email-id]]
+                  [email-state
+                   [:bind
+                    (chidu-store-email-body-observation-email-state observation)]
+                   :update]
+                  [text-content
+                   [:bind
+                    (chidu-store-email-body-observation-text-content observation)]
+                   :update]
+                  [html-content
+                   [:bind
+                    (chidu-store-email-body-observation-html-content observation)]
+                   :update]
+                  [revision [:bind (1+ actual-revision)] :update]
+                  [is-truncated
+                   [:bind
+                    (chidu-store-sqlite--integer-bool
+                     (chidu-store-email-body-observation-truncated-p observation))]
+                   :update]
+                  [encoding-problem
+                   [:bind
+                    (chidu-store-sqlite--integer-bool
+                     (chidu-store-email-body-observation-encoding-problem-p
+                      observation))]
+                   :update]
+                  [observed-change-seq [:bind change-seq] :update]]
+                 :on-conflict [account-id local-email-id]])
               (chidu-sql-execute database
                 [:delete :from jmap-email-attachment
-                         :where [:and
-                                 [:= account-id [:bind account-id]]
-                                 [:= local-email-id [:bind local-email-id]]]])
+                 :where [:and
+                         [:= account-id [:bind account-id]]
+                         [:= local-email-id [:bind local-email-id]]]])
               (cl-loop
                for attachment across
                (chidu-store-email-body-observation-attachments observation)
@@ -464,36 +464,36 @@ REMOTE-THREAD-ID selects the projection."
                do
                (chidu-sql-execute database
                  [:insert :into jmap-email-attachment
-                          :row
-                          [[account-id [:bind account-id]]
-                           [local-email-id [:bind local-email-id]]
-                           [ordinal [:bind ordinal]]
-                           [part-id
-                            [:bind
-                             (chidu-store-email-attachment-part-id attachment)]]
-                           [blob-id
-                            [:bind
-                             (chidu-store-email-attachment-blob-id attachment)]]
-                           [size [:bind (chidu-store-email-attachment-size attachment)]]
-                           [name [:bind (chidu-store-email-attachment-name attachment)]]
-                           [media-type
-                            [:bind
-                             (chidu-store-email-attachment-media-type attachment)]]
-                           [charset
-                            [:bind
-                             (chidu-store-email-attachment-charset attachment)]]
-                           [disposition
-                            [:bind
-                             (chidu-store-email-attachment-disposition attachment)]]
-                           [cid [:bind (chidu-store-email-attachment-cid attachment)]]
-                           [language-json
-                            [:bind
-                             (chidu-store-sqlite--string-vector-json
-                              (chidu-store-email-attachment-language attachment)
-                              "Email attachment language")]]
-                           [location
-                            [:bind
-                             (chidu-store-email-attachment-location attachment)]]]]))))
+                  :row
+                  [[account-id [:bind account-id]]
+                   [local-email-id [:bind local-email-id]]
+                   [ordinal [:bind ordinal]]
+                   [part-id
+                    [:bind
+                     (chidu-store-email-attachment-part-id attachment)]]
+                   [blob-id
+                    [:bind
+                     (chidu-store-email-attachment-blob-id attachment)]]
+                   [size [:bind (chidu-store-email-attachment-size attachment)]]
+                   [name [:bind (chidu-store-email-attachment-name attachment)]]
+                   [media-type
+                    [:bind
+                     (chidu-store-email-attachment-media-type attachment)]]
+                   [charset
+                    [:bind
+                     (chidu-store-email-attachment-charset attachment)]]
+                   [disposition
+                    [:bind
+                     (chidu-store-email-attachment-disposition attachment)]]
+                   [cid [:bind (chidu-store-email-attachment-cid attachment)]]
+                   [language-json
+                    [:bind
+                     (chidu-store-sqlite--string-vector-json
+                      (chidu-store-email-attachment-language attachment)
+                      "Email attachment language")]]
+                   [location
+                    [:bind
+                     (chidu-store-email-attachment-location attachment)]]]]))))
           (chidu-store-sqlite--email-body-context
            state account-id local-email-id remote-email-id)))))))
 
@@ -548,92 +548,92 @@ REMOTE-THREAD-ID selects the projection."
                      (chidu-store-sqlite--increment-change-seq database)))
                 (chidu-sql-execute database
                   [:insert :into jmap-parsed-blob
-                           :row
-                           [[account-id [:bind account-id]]
-                            [blob-id [:bind blob-id]]
-                            [profile-version [:bind profile-version]]
-                            [revision [:bind (1+ actual-revision)] :update]
-                            [message-ids-json
-                             [:bind
-                              (chidu-store-sqlite--string-vector-json
-                               (chidu-store-parsed-message-message-ids message)
-                               "Parsed messageId")]
-                             :update]
-                            [in-reply-to-json
-                             [:bind
-                              (chidu-store-sqlite--string-vector-json
-                               (chidu-store-parsed-message-in-reply-to message)
-                               "Parsed inReplyTo")]
-                             :update]
-                            [references-json
-                             [:bind
-                              (chidu-store-sqlite--string-vector-json
-                               (chidu-store-parsed-message-references message)
-                               "Parsed references")]
-                             :update]
-                            [sender-json
-                             [:bind
-                              (chidu-store-sqlite--email-address-vector-json
-                               (chidu-store-parsed-message-sender message))]
-                             :update]
-                            [from-json
-                             [:bind
-                              (chidu-store-sqlite--email-address-vector-json
-                               (chidu-store-parsed-message-from message))]
-                             :update]
-                            [to-json
-                             [:bind
-                              (chidu-store-sqlite--email-address-vector-json
-                               (chidu-store-parsed-message-to message))]
-                             :update]
-                            [cc-json
-                             [:bind
-                              (chidu-store-sqlite--email-address-vector-json
-                               (chidu-store-parsed-message-cc message))]
-                             :update]
-                            [bcc-json
-                             [:bind
-                              (chidu-store-sqlite--email-address-vector-json
-                               (chidu-store-parsed-message-bcc message))]
-                             :update]
-                            [reply-to-json
-                             [:bind
-                              (chidu-store-sqlite--email-address-vector-json
-                               (chidu-store-parsed-message-reply-to message))]
-                             :update]
-                            [subject
-                             [:bind (chidu-store-parsed-message-subject message)]
-                             :update]
-                            [sent-at
-                             [:bind (chidu-store-parsed-message-sent-at message)]
-                             :update]
-                            [preview
-                             [:bind (chidu-store-parsed-message-preview message)]
-                             :update]
-                            [text-content
-                             [:bind (chidu-store-email-body-text-content body)]
-                             :update]
-                            [html-content
-                             [:bind (chidu-store-email-body-html-content body)]
-                             :update]
-                            [is-truncated
-                             [:bind
-                              (chidu-store-sqlite--integer-bool
-                               (chidu-store-email-body-truncated-p body))]
-                             :update]
-                            [encoding-problem
-                             [:bind
-                              (chidu-store-sqlite--integer-bool
-                               (chidu-store-email-body-encoding-problem-p body))]
-                             :update]
-                            [observed-change-seq [:bind change-seq] :update]]
-                           :on-conflict [account-id blob-id profile-version]])
+                   :row
+                   [[account-id [:bind account-id]]
+                    [blob-id [:bind blob-id]]
+                    [profile-version [:bind profile-version]]
+                    [revision [:bind (1+ actual-revision)] :update]
+                    [message-ids-json
+                     [:bind
+                      (chidu-store-sqlite--string-vector-json
+                       (chidu-store-parsed-message-message-ids message)
+                       "Parsed messageId")]
+                     :update]
+                    [in-reply-to-json
+                     [:bind
+                      (chidu-store-sqlite--string-vector-json
+                       (chidu-store-parsed-message-in-reply-to message)
+                       "Parsed inReplyTo")]
+                     :update]
+                    [references-json
+                     [:bind
+                      (chidu-store-sqlite--string-vector-json
+                       (chidu-store-parsed-message-references message)
+                       "Parsed references")]
+                     :update]
+                    [sender-json
+                     [:bind
+                      (chidu-store-sqlite--email-address-vector-json
+                       (chidu-store-parsed-message-sender message))]
+                     :update]
+                    [from-json
+                     [:bind
+                      (chidu-store-sqlite--email-address-vector-json
+                       (chidu-store-parsed-message-from message))]
+                     :update]
+                    [to-json
+                     [:bind
+                      (chidu-store-sqlite--email-address-vector-json
+                       (chidu-store-parsed-message-to message))]
+                     :update]
+                    [cc-json
+                     [:bind
+                      (chidu-store-sqlite--email-address-vector-json
+                       (chidu-store-parsed-message-cc message))]
+                     :update]
+                    [bcc-json
+                     [:bind
+                      (chidu-store-sqlite--email-address-vector-json
+                       (chidu-store-parsed-message-bcc message))]
+                     :update]
+                    [reply-to-json
+                     [:bind
+                      (chidu-store-sqlite--email-address-vector-json
+                       (chidu-store-parsed-message-reply-to message))]
+                     :update]
+                    [subject
+                     [:bind (chidu-store-parsed-message-subject message)]
+                     :update]
+                    [sent-at
+                     [:bind (chidu-store-parsed-message-sent-at message)]
+                     :update]
+                    [preview
+                     [:bind (chidu-store-parsed-message-preview message)]
+                     :update]
+                    [text-content
+                     [:bind (chidu-store-email-body-text-content body)]
+                     :update]
+                    [html-content
+                     [:bind (chidu-store-email-body-html-content body)]
+                     :update]
+                    [is-truncated
+                     [:bind
+                      (chidu-store-sqlite--integer-bool
+                       (chidu-store-email-body-truncated-p body))]
+                     :update]
+                    [encoding-problem
+                     [:bind
+                      (chidu-store-sqlite--integer-bool
+                       (chidu-store-email-body-encoding-problem-p body))]
+                     :update]
+                    [observed-change-seq [:bind change-seq] :update]]
+                   :on-conflict [account-id blob-id profile-version]])
                 (chidu-sql-execute database
                   [:delete :from jmap-parsed-attachment
-                           :where [:and
-                                   [:= account-id [:bind account-id]]
-                                   [:= source-blob-id [:bind blob-id]]
-                                   [:= profile-version [:bind profile-version]]]])
+                   :where [:and
+                           [:= account-id [:bind account-id]]
+                           [:= source-blob-id [:bind blob-id]]
+                           [:= profile-version [:bind profile-version]]]])
                 (cl-loop
                  for attachment across
                  (chidu-store-email-body-attachments body)
@@ -641,40 +641,40 @@ REMOTE-THREAD-ID selects the projection."
                  do
                  (chidu-sql-execute database
                    [:insert :into jmap-parsed-attachment
-                            :row
-                            [[account-id [:bind account-id]]
-                             [source-blob-id [:bind blob-id]]
-                             [profile-version [:bind profile-version]]
-                             [ordinal [:bind ordinal]]
-                             [part-id
-                              [:bind
-                               (chidu-store-email-attachment-part-id attachment)]]
-                             [blob-id
-                              [:bind
-                               (chidu-store-email-attachment-blob-id attachment)]]
-                             [size
-                              [:bind (chidu-store-email-attachment-size attachment)]]
-                             [name
-                              [:bind (chidu-store-email-attachment-name attachment)]]
-                             [media-type
-                              [:bind
-                               (chidu-store-email-attachment-media-type attachment)]]
-                             [charset
-                              [:bind
-                               (chidu-store-email-attachment-charset attachment)]]
-                             [disposition
-                              [:bind
-                               (chidu-store-email-attachment-disposition attachment)]]
-                             [cid
-                              [:bind (chidu-store-email-attachment-cid attachment)]]
-                             [language-json
-                              [:bind
-                               (chidu-store-sqlite--string-vector-json
-                                (chidu-store-email-attachment-language attachment)
-                                "Parsed attachment language")]]
-                             [location
-                              [:bind
-                               (chidu-store-email-attachment-location attachment)]]]]))))
+                    :row
+                    [[account-id [:bind account-id]]
+                     [source-blob-id [:bind blob-id]]
+                     [profile-version [:bind profile-version]]
+                     [ordinal [:bind ordinal]]
+                     [part-id
+                      [:bind
+                       (chidu-store-email-attachment-part-id attachment)]]
+                     [blob-id
+                      [:bind
+                       (chidu-store-email-attachment-blob-id attachment)]]
+                     [size
+                      [:bind (chidu-store-email-attachment-size attachment)]]
+                     [name
+                      [:bind (chidu-store-email-attachment-name attachment)]]
+                     [media-type
+                      [:bind
+                       (chidu-store-email-attachment-media-type attachment)]]
+                     [charset
+                      [:bind
+                       (chidu-store-email-attachment-charset attachment)]]
+                     [disposition
+                      [:bind
+                       (chidu-store-email-attachment-disposition attachment)]]
+                     [cid
+                      [:bind (chidu-store-email-attachment-cid attachment)]]
+                     [language-json
+                      [:bind
+                       (chidu-store-sqlite--string-vector-json
+                        (chidu-store-email-attachment-language attachment)
+                        "Parsed attachment language")]]
+                     [location
+                      [:bind
+                       (chidu-store-email-attachment-location attachment)]]]]))))
             (chidu-store-sqlite--parsed-blob-context
              state account-id blob-id profile-version))))))))
 
@@ -728,26 +728,26 @@ REMOTE-THREAD-ID selects the projection."
                    (next-revision (1+ actual-revision)))
               (chidu-sql-execute database
                 [:insert :into jmap-conversation
-                         :row
-                         [[account-id [:bind account-id]]
-                          [remote-thread-id [:bind remote-thread-id]]
-                          [thread-state
-                           [:bind
-                            (chidu-store-conversation-observation-thread-state observation)]
-                           :update]
-                          [email-state
-                           [:bind
-                            (chidu-store-conversation-observation-email-state observation)]
-                           :update]
-                          [revision [:bind next-revision] :update]
-                          [is-complete
-                           [:bind
-                            (chidu-store-sqlite--integer-bool
-                             (chidu-store-conversation-observation-complete-p
-                              observation))]
-                           :update]
-                          [observed-change-seq [:bind change-seq] :update]]
-                         :on-conflict [account-id remote-thread-id]])
+                 :row
+                 [[account-id [:bind account-id]]
+                  [remote-thread-id [:bind remote-thread-id]]
+                  [thread-state
+                   [:bind
+                    (chidu-store-conversation-observation-thread-state observation)]
+                   :update]
+                  [email-state
+                   [:bind
+                    (chidu-store-conversation-observation-email-state observation)]
+                   :update]
+                  [revision [:bind next-revision] :update]
+                  [is-complete
+                   [:bind
+                    (chidu-store-sqlite--integer-bool
+                     (chidu-store-conversation-observation-complete-p
+                      observation))]
+                   :update]
+                  [observed-change-seq [:bind change-seq] :update]]
+                 :on-conflict [account-id remote-thread-id]])
               (chidu-sql-execute database
                 [:delete
                  :from jmap-conversation-row
@@ -761,57 +761,57 @@ REMOTE-THREAD-ID selects the projection."
                do
                (chidu-sql-execute database
                  [:insert :into jmap-conversation-row
-                          :row
-                          [[account-id [:bind account-id]]
-                           [remote-thread-id [:bind remote-thread-id]]
-                           [ordinal [:bind ordinal]]
-                           [local-email-id
-                            [:bind
-                             (chidu-store-email-summary-row-local-email-id summary)]]
-                           [parent-local-email-id
-                            [:bind
-                             (chidu-store-conversation-row-parent-local-email-id item)]]
-                           [depth
-                            [:bind (chidu-store-conversation-row-depth item)]]
-                           [received-at
-                            [:bind (chidu-store-email-summary-row-received-at summary)]]
-                           [sent-at
-                            [:bind (chidu-store-conversation-row-sent-at item)]]
-                           [from-name
-                            [:bind (chidu-store-email-summary-row-from-name summary)]]
-                           [from-email
-                            [:bind (chidu-store-email-summary-row-from-email summary)]]
-                           [subject
-                            [:bind (chidu-store-email-summary-row-subject summary)]]
-                           [preview
-                            [:bind (chidu-store-email-summary-row-preview summary)]]
-                           [is-unread
-                            [:bind
-                             (chidu-store-sqlite--integer-bool
-                              (chidu-store-email-summary-row-unread-p summary))]]
-                           [is-flagged
-                            [:bind
-                             (chidu-store-sqlite--integer-bool
-                              (chidu-store-email-summary-row-flagged-p summary))]]
-                           [has-attachment
-                            [:bind
-                             (chidu-store-sqlite--integer-bool
-                              (chidu-store-email-summary-row-has-attachment-p summary))]]
-                           [message-ids-json
-                            [:bind
-                             (chidu-store-sqlite--string-vector-json
-                              (chidu-store-conversation-row-message-ids item)
-                              "Conversation messageId")]]
-                           [in-reply-to-json
-                            [:bind
-                             (chidu-store-sqlite--string-vector-json
-                              (chidu-store-conversation-row-in-reply-to item)
-                              "Conversation inReplyTo")]]
-                           [references-json
-                            [:bind
-                             (chidu-store-sqlite--string-vector-json
-                              (chidu-store-conversation-row-references item)
-                              "Conversation references")]]]]))))
+                  :row
+                  [[account-id [:bind account-id]]
+                   [remote-thread-id [:bind remote-thread-id]]
+                   [ordinal [:bind ordinal]]
+                   [local-email-id
+                    [:bind
+                     (chidu-store-email-summary-row-local-email-id summary)]]
+                   [parent-local-email-id
+                    [:bind
+                     (chidu-store-conversation-row-parent-local-email-id item)]]
+                   [depth
+                    [:bind (chidu-store-conversation-row-depth item)]]
+                   [received-at
+                    [:bind (chidu-store-email-summary-row-received-at summary)]]
+                   [sent-at
+                    [:bind (chidu-store-conversation-row-sent-at item)]]
+                   [from-name
+                    [:bind (chidu-store-email-summary-row-from-name summary)]]
+                   [from-email
+                    [:bind (chidu-store-email-summary-row-from-email summary)]]
+                   [subject
+                    [:bind (chidu-store-email-summary-row-subject summary)]]
+                   [preview
+                    [:bind (chidu-store-email-summary-row-preview summary)]]
+                   [is-unread
+                    [:bind
+                     (chidu-store-sqlite--integer-bool
+                      (chidu-store-email-summary-row-unread-p summary))]]
+                   [is-flagged
+                    [:bind
+                     (chidu-store-sqlite--integer-bool
+                      (chidu-store-email-summary-row-flagged-p summary))]]
+                   [has-attachment
+                    [:bind
+                     (chidu-store-sqlite--integer-bool
+                      (chidu-store-email-summary-row-has-attachment-p summary))]]
+                   [message-ids-json
+                    [:bind
+                     (chidu-store-sqlite--string-vector-json
+                      (chidu-store-conversation-row-message-ids item)
+                      "Conversation messageId")]]
+                   [in-reply-to-json
+                    [:bind
+                     (chidu-store-sqlite--string-vector-json
+                      (chidu-store-conversation-row-in-reply-to item)
+                      "Conversation inReplyTo")]]
+                   [references-json
+                    [:bind
+                     (chidu-store-sqlite--string-vector-json
+                      (chidu-store-conversation-row-references item)
+                      "Conversation references")]]]]))))
           (chidu-store-sqlite--conversation-context
            state account-id remote-thread-id)))))))
 

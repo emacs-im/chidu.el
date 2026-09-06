@@ -84,12 +84,12 @@
     (chidu-selection-mark)
     (should (equal "three" (chidu-selection-row-id-at-point)))
     (should (equal '("one" "two") (chidu-selection-marked-ids)))
-    
+
     (goto-char (point-min))
     (chidu-selection-unmark)
     (should (equal "two" (chidu-selection-row-id-at-point)))
     (should (equal '("two") (chidu-selection-marked-ids)))
-    
+
     (goto-char (point-min))
     (forward-line 2)
     (chidu-selection-toggle)
@@ -101,7 +101,7 @@
     (should (equal "three" (chidu-selection-row-id-at-point)))
     (chidu-selection-previous-marked)
     (should (equal "two" (chidu-selection-row-id-at-point)))
-    
+
     (chidu-selection-mark-all)
     (should (equal '("one" "two" "three")
                    (chidu-selection-marked-ids)))
@@ -111,7 +111,7 @@
     (should (= 3 (chidu-selection-count)))
     (chidu-selection-clear)
     (should (zerop (chidu-selection-count)))
-    
+
     (puthash "three" t chidu-selection--marked-ids)
     (should (= 1 (chidu-selection-prune-to-ids '("one" "two"))))
     (should (zerop (chidu-selection-count)))
@@ -138,13 +138,13 @@
     (should (equal '("one") (chidu-selection-trash-flagged-ids)))
     (should-not (chidu-selection-marked-ids))
     (should (= 1 (chidu-selection-marker-count)))
-    
+
     ;; Dired's toggle operation leaves D flags untouched.
     (goto-char (point-min))
     (chidu-selection-toggle)
     (should (equal '("one") (chidu-selection-trash-flagged-ids)))
     (should-not (chidu-selection-marked-ids))
-    
+
     ;; `m' overwrites D with the ordinary `*' marker.
     (goto-char (point-min))
     (chidu-selection-mark)
@@ -153,7 +153,7 @@
     (goto-char (point-max))
     (funcall (chidu-selection-icon-inserter "one"))
     (should (string-suffix-p "*" (buffer-string)))
-    
+
     ;; `d' overwrites the ordinary mark, and `u' clears either kind.
     (goto-char (point-min))
     (chidu-selection-flag-trash)
@@ -163,7 +163,7 @@
     (chidu-selection-unmark)
     (should-not (chidu-selection-marked-ids))
     (should-not (chidu-selection-trash-flagged-ids))
-    
+
     ;; Toggle-all ignores D rows; mark-all deliberately overwrites them.
     (goto-char (point-min))
     (chidu-selection-flag-trash)
@@ -204,9 +204,8 @@
         :account account :mailbox mailbox :rows (vector summary-row)))
       :update #'chidu-summary--update
       :renderer #'chidu-summary--renderer
-      
-      :anchor 'chidu-summary-email-id
-      ))
+
+      :anchor 'chidu-summary-email-id))
     ('search
      (let ((spec
             (chidu-search-query-compile "One" (vector mailbox))))
@@ -233,9 +232,8 @@
              (chidu-store-mailbox-remote-mailbox-id mailbox))))))
         :update #'chidu-search--update
         :renderer #'chidu-search--renderer
-        
-        :anchor 'chidu-search-email-id
-        )))))
+
+        :anchor 'chidu-search-email-id)))))
 
 (ert-deftest chidu-list-markers-redraw-retained-summary-and-search-rows ()
   (dolist (surface '(summary search))
@@ -305,8 +303,7 @@
               (buffer-substring-no-properties
                (line-beginning-position) (line-end-position)))))
         (when (appkit-app-live-p app)
-          (appkit-app-close app)
-          )
+          (appkit-app-close app))
         (when (buffer-live-p (appkit-surface-buffer view)) (kill-buffer (appkit-surface-buffer view)))))))
 
 (ert-deftest chidu-summary-trash-stages-before-explicit-execution ()
@@ -340,7 +337,6 @@
          executed)
     (unwind-protect
         (with-temp-buffer
-          
           (appkit-open-generated-surface (appkit-surface-type-create :name 'selection :mode #'chidu-summary-mode :init (lambda (_context input) (appkit-next :model input :render (appkit-projection-change-create :full-p t :frame-p t))) :update #'chidu-summary--update :renderer-factory #'chidu-summary--renderer) :app app :identity 'selection :input state :buffer (current-buffer))
           (goto-char (text-property-not-all (point-min) (point-max) 'chidu-summary-email-id nil))
           (cl-letf (((symbol-function 'chidu-summary--trash-ids)
@@ -391,7 +387,6 @@
          called)
     (unwind-protect
         (with-temp-buffer
-          
           (appkit-open-generated-surface (appkit-surface-type-create :name 'selection :mode #'chidu-summary-mode :init (lambda (_context input) (appkit-next :model input :render (appkit-projection-change-create :full-p t :frame-p t))) :update #'chidu-summary--update :renderer-factory #'chidu-summary--renderer) :app app :identity 'selection :input state :buffer (current-buffer))
           (puthash id-one t chidu-selection--marked-ids)
           (puthash id-three t chidu-selection--marked-ids)

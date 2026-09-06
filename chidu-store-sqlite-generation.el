@@ -22,11 +22,11 @@
   (caar
    (chidu-sql-select database
      [:select [generation-id]
-              :from jmap-email-generation
-              :where [:and
-                      [:= account-id [:bind account-id]]
-                      [:= lifecycle [:literal "active"]]]
-              :limit 1])))
+      :from jmap-email-generation
+      :where [:and
+              [:= account-id [:bind account-id]]
+              [:= lifecycle [:literal "active"]]]
+      :limit 1])))
 
 (defun chidu-store-sqlite--active-generation-for-email
     (database account-id local-email-id)
@@ -34,17 +34,17 @@
   (caar
    (chidu-sql-select database
      [:select [generation:generation-id]
-              :from [:as jmap-email-generation generation]
-              :joins
-              [[:inner [:as jmap-email-generation-member member]
-                       :on [:and
-                            [:= member:account-id generation:account-id]
-                            [:= member:generation-id generation:generation-id]]]]
-              :where [:and
-                      [:= generation:account-id [:bind account-id]]
-                      [:= generation:lifecycle [:literal "active"]]
-                      [:= member:local-email-id [:bind local-email-id]]]
-              :limit 1])))
+      :from [:as jmap-email-generation generation]
+      :joins
+      [[:inner [:as jmap-email-generation-member member]
+        :on [:and
+             [:= member:account-id generation:account-id]
+             [:= member:generation-id generation:generation-id]]]]
+      :where [:and
+              [:= generation:account-id [:bind account-id]]
+              [:= generation:lifecycle [:literal "active"]]
+              [:= member:local-email-id [:bind local-email-id]]]
+      :limit 1])))
 
 (defun chidu-store-sqlite--set-active-email-keyword
     (database account-id local-email-id keyword present-p)
@@ -58,18 +58,18 @@ not a member of the active generation."
     (if present-p
         (chidu-sql-execute database
           [:insert :or :ignore :into jmap-email-generation-keyword
-                   :row
-                   [[account-id [:bind account-id]]
-                    [generation-id [:bind generation-id]]
-                    [local-email-id [:bind local-email-id]]
-                    [keyword [:bind keyword]]]])
+           :row
+           [[account-id [:bind account-id]]
+            [generation-id [:bind generation-id]]
+            [local-email-id [:bind local-email-id]]
+            [keyword [:bind keyword]]]])
       (chidu-sql-execute database
         [:delete :from jmap-email-generation-keyword
-                 :where [:and
-                         [:= account-id [:bind account-id]]
-                         [:= generation-id [:bind generation-id]]
-                         [:= local-email-id [:bind local-email-id]]
-                         [:= keyword [:bind keyword]]]]))))
+         :where [:and
+                 [:= account-id [:bind account-id]]
+                 [:= generation-id [:bind generation-id]]
+                 [:= local-email-id [:bind local-email-id]]
+                 [:= keyword [:bind keyword]]]]))))
 
 (defun chidu-store-sqlite--move-active-email
     (database account-id local-email-id source-remote-id destination-remote-id)
@@ -82,18 +82,18 @@ add DESTINATION-REMOTE-ID while preserving every other membership."
                 database account-id local-email-id)))
     (chidu-sql-execute database
       [:delete :from jmap-email-generation-mailbox
-               :where [:and
-                       [:= account-id [:bind account-id]]
-                       [:= generation-id [:bind generation-id]]
-                       [:= local-email-id [:bind local-email-id]]
-                       [:= remote-mailbox-id [:bind source-remote-id]]]])
+       :where [:and
+               [:= account-id [:bind account-id]]
+               [:= generation-id [:bind generation-id]]
+               [:= local-email-id [:bind local-email-id]]
+               [:= remote-mailbox-id [:bind source-remote-id]]]])
     (chidu-sql-execute database
       [:insert :or :ignore :into jmap-email-generation-mailbox
-               :row
-               [[account-id [:bind account-id]]
-                [generation-id [:bind generation-id]]
-                [local-email-id [:bind local-email-id]]
-                [remote-mailbox-id [:bind destination-remote-id]]]])))
+       :row
+       [[account-id [:bind account-id]]
+        [generation-id [:bind generation-id]]
+        [local-email-id [:bind local-email-id]]
+        [remote-mailbox-id [:bind destination-remote-id]]]])))
 
 (defun chidu-store-sqlite--replace-active-email-mailboxes
     (database account-id local-email-id remote-mailbox-ids)
@@ -110,20 +110,20 @@ complete nonempty replacement set."
                 database account-id local-email-id)))
     (chidu-sql-execute database
       [:delete :from jmap-email-generation-mailbox
-               :where [:and
-                       [:= account-id [:bind account-id]]
-                       [:= generation-id [:bind generation-id]]
-                       [:= local-email-id [:bind local-email-id]]]])
+       :where [:and
+               [:= account-id [:bind account-id]]
+               [:= generation-id [:bind generation-id]]
+               [:= local-email-id [:bind local-email-id]]]])
     (cl-loop
      for remote-id across remote-mailbox-ids
      do
      (chidu-sql-execute database
        [:insert :into jmap-email-generation-mailbox
-                :row
-                [[account-id [:bind account-id]]
-                 [generation-id [:bind generation-id]]
-                 [local-email-id [:bind local-email-id]]
-                 [remote-mailbox-id [:bind remote-id]]]]))))
+        :row
+        [[account-id [:bind account-id]]
+         [generation-id [:bind generation-id]]
+         [local-email-id [:bind local-email-id]]
+         [remote-mailbox-id [:bind remote-id]]]]))))
 
 (defconst chidu-store-sqlite--summary-sparse-mailbox-limit 4096
   "Maximum Mailbox size for the membership-first Summary query plan.
@@ -181,29 +181,29 @@ canonical metadata columns consumed below in newest-first order."
         :from [:as ,recent-query recent]
         :joins
         [[:inner [:as jmap-email-record email]
-                 :on [:and
-                      [:= email:account-id recent:account-id]
-                      [:= email:local-email-id recent:local-email-id]]]
+          :on [:and
+               [:= email:account-id recent:account-id]
+               [:= email:local-email-id recent:local-email-id]]]
          [:left [:as jmap-email-preview preview]
-                :on [:and
-                     [:= preview:account-id recent:account-id]
-                     [:= preview:local-email-id recent:local-email-id]]]
+          :on [:and
+               [:= preview:account-id recent:account-id]
+               [:= preview:local-email-id recent:local-email-id]]]
          [:left [:as jmap-email-generation-keyword seen]
-                :on [:and
-                     [:= seen:account-id recent:account-id]
-                     [:= seen:generation-id [:bind ,generation-id]]
-                     [:= seen:local-email-id recent:local-email-id]
-                     [:= seen:keyword [:literal "$seen"]]]]
+          :on [:and
+               [:= seen:account-id recent:account-id]
+               [:= seen:generation-id [:bind ,generation-id]]
+               [:= seen:local-email-id recent:local-email-id]
+               [:= seen:keyword [:literal "$seen"]]]]
          [:left [:as jmap-email-generation-keyword flagged]
-                :on [:and
-                     [:= flagged:account-id recent:account-id]
-                     [:= flagged:generation-id [:bind ,generation-id]]
-                     [:= flagged:local-email-id recent:local-email-id]
-                     [:= flagged:keyword [:literal "$flagged"]]]]
+          :on [:and
+               [:= flagged:account-id recent:account-id]
+               [:= flagged:generation-id [:bind ,generation-id]]
+               [:= flagged:local-email-id recent:local-email-id]
+               [:= flagged:keyword [:literal "$flagged"]]]]
          [:left [:as jmap-seen-intent intent]
-                :on [:and
-                     [:= intent:account-id recent:account-id]
-                     [:= intent:local-email-id recent:local-email-id]]]]
+          :on [:and
+               [:= intent:account-id recent:account-id]
+               [:= intent:local-email-id recent:local-email-id]]]]
         :order-by [[recent:received-at :desc] [recent:local-email-id :desc]]]
      (chidu-store-sqlite--canonical-summary-row
       local-id remote-id thread-id received-at from-json subject preview
@@ -226,37 +226,37 @@ PROBE-LIMIT bounds returned rows."
       [:= metadata:account-id [:bind account-id]]
       [:exists
        [:select [1]
-                :from [:as jmap-email-generation-mailbox membership]
-                :where [:and
-                        [:= membership:account-id metadata:account-id]
-                        [:= membership:generation-id [:bind generation-id]]
-                        [:= membership:local-email-id metadata:local-email-id]
-                        [:= membership:remote-mailbox-id
-                            [:bind remote-mailbox-id]]]]]
+        :from [:as jmap-email-generation-mailbox membership]
+        :where [:and
+                [:= membership:account-id metadata:account-id]
+                [:= membership:generation-id [:bind generation-id]]
+                [:= membership:local-email-id metadata:local-email-id]
+                [:= membership:remote-mailbox-id
+                    [:bind remote-mailbox-id]]]]]
       [:not-exists
        [:select [1]
-                :from [:as jmap-mailbox-move-target move-target]
-                :joins
-                [[:inner [:as jmap-mailbox-move move]
-                         :on [:and
-                              [:= move:operation-id move-target:operation-id]
-                              [:= move:account-id move-target:account-id]]]]
-                :where [:and
-                        [:= move-target:account-id metadata:account-id]
-                        [:= move-target:local-email-id metadata:local-email-id]
-                        [:= move:source-mailbox-id [:bind mailbox-id]]]]]
+        :from [:as jmap-mailbox-move-target move-target]
+        :joins
+        [[:inner [:as jmap-mailbox-move move]
+          :on [:and
+               [:= move:operation-id move-target:operation-id]
+               [:= move:account-id move-target:account-id]]]]
+        :where [:and
+                [:= move-target:account-id metadata:account-id]
+                [:= move-target:local-email-id metadata:local-email-id]
+                [:= move:source-mailbox-id [:bind mailbox-id]]]]]
       [:not-exists
        [:select [1]
-                :from [:as jmap-trash-target trash-target]
-                :joins
-                [[:inner [:as jmap-trash-operation trash]
-                         :on [:and
-                              [:= trash:operation-id trash-target:operation-id]
-                              [:= trash:account-id trash-target:account-id]]]]
-                :where [:and
-                        [:= trash-target:account-id metadata:account-id]
-                        [:= trash-target:local-email-id metadata:local-email-id]
-                        [:!= trash:trash-mailbox-id [:bind mailbox-id]]]]]]
+        :from [:as jmap-trash-target trash-target]
+        :joins
+        [[:inner [:as jmap-trash-operation trash]
+          :on [:and
+               [:= trash:operation-id trash-target:operation-id]
+               [:= trash:account-id trash-target:account-id]]]]
+        :where [:and
+                [:= trash-target:account-id metadata:account-id]
+                [:= trash-target:local-email-id metadata:local-email-id]
+                [:!= trash:trash-mailbox-id [:bind mailbox-id]]]]]]
      :order-by [[metadata:received-at :desc]
                 [metadata:local-email-id :desc]]
      :limit [:bind probe-limit]]
@@ -276,9 +276,9 @@ PROBE-LIMIT bounds returned rows."
      :from [:as jmap-email-generation-mailbox membership]
      :joins
      [[:inner [:as jmap-email-metadata metadata]
-              :on [:and
-                   [:= metadata:account-id membership:account-id]
-                   [:= metadata:local-email-id membership:local-email-id]]]]
+       :on [:and
+            [:= metadata:account-id membership:account-id]
+            [:= metadata:local-email-id membership:local-email-id]]]]
      :where
      [:and
       [:= membership:account-id [:bind account-id]]
@@ -286,28 +286,28 @@ PROBE-LIMIT bounds returned rows."
       [:= membership:remote-mailbox-id [:bind remote-mailbox-id]]
       [:not-exists
        [:select [1]
-                :from [:as jmap-mailbox-move-target move-target]
-                :joins
-                [[:inner [:as jmap-mailbox-move move]
-                         :on [:and
-                              [:= move:operation-id move-target:operation-id]
-                              [:= move:account-id move-target:account-id]]]]
-                :where [:and
-                        [:= move-target:account-id membership:account-id]
-                        [:= move-target:local-email-id membership:local-email-id]
-                        [:= move:source-mailbox-id [:bind mailbox-id]]]]]
+        :from [:as jmap-mailbox-move-target move-target]
+        :joins
+        [[:inner [:as jmap-mailbox-move move]
+          :on [:and
+               [:= move:operation-id move-target:operation-id]
+               [:= move:account-id move-target:account-id]]]]
+        :where [:and
+                [:= move-target:account-id membership:account-id]
+                [:= move-target:local-email-id membership:local-email-id]
+                [:= move:source-mailbox-id [:bind mailbox-id]]]]]
       [:not-exists
        [:select [1]
-                :from [:as jmap-trash-target trash-target]
-                :joins
-                [[:inner [:as jmap-trash-operation trash]
-                         :on [:and
-                              [:= trash:operation-id trash-target:operation-id]
-                              [:= trash:account-id trash-target:account-id]]]]
-                :where [:and
-                        [:= trash-target:account-id membership:account-id]
-                        [:= trash-target:local-email-id membership:local-email-id]
-                        [:!= trash:trash-mailbox-id [:bind mailbox-id]]]]]]
+        :from [:as jmap-trash-target trash-target]
+        :joins
+        [[:inner [:as jmap-trash-operation trash]
+          :on [:and
+               [:= trash:operation-id trash-target:operation-id]
+               [:= trash:account-id trash-target:account-id]]]]
+        :where [:and
+                [:= trash-target:account-id membership:account-id]
+                [:= trash-target:local-email-id membership:local-email-id]
+                [:!= trash:trash-mailbox-id [:bind mailbox-id]]]]]]
      :order-by [[metadata:received-at :desc]
                 [metadata:local-email-id :desc]]
      :limit [:bind probe-limit]]
@@ -331,11 +331,11 @@ ACCOUNT-ID, GENERATION-ID, and LOCAL-EMAIL-ID identify the canonical Email."
        [:= metadata:local-email-id [:bind local-email-id]]
        [:exists
         [:select [1]
-                 :from [:as jmap-email-generation-member member]
-                 :where [:and
-                         [:= member:account-id metadata:account-id]
-                         [:= member:generation-id [:bind generation-id]]
-                         [:= member:local-email-id metadata:local-email-id]]]]]
+         :from [:as jmap-email-generation-member member]
+         :where [:and
+                 [:= member:account-id metadata:account-id]
+                 [:= member:generation-id [:bind generation-id]]
+                 [:= member:local-email-id metadata:local-email-id]]]]]
       :limit 1]
      generation-id)))
 
@@ -349,38 +349,38 @@ ACCOUNT-ID, GENERATION-ID, and LOCAL-EMAIL-ID identify the active Email."
            #'car
            (chidu-sql-select database
              [:select [remote-mailbox-id]
-                      :from jmap-email-generation-mailbox
-                      :where [:and
-                              [:= account-id [:bind account-id]]
-                              [:= generation-id [:bind generation-id]]
-                              [:= local-email-id [:bind local-email-id]]]
-                      :order-by [[remote-mailbox-id :asc]]])))
+              :from jmap-email-generation-mailbox
+              :where [:and
+                      [:= account-id [:bind account-id]]
+                      [:= generation-id [:bind generation-id]]
+                      [:= local-email-id [:bind local-email-id]]]
+              :order-by [[remote-mailbox-id :asc]]])))
          (trash-p
           (chidu-sql-one database
               [:select [[present 1]]
-                       :from jmap-trash-target
-                       :where [:and
-                               [:= account-id [:bind account-id]]
-                               [:= local-email-id [:bind local-email-id]]]
-                       :limit 1]
+               :from jmap-trash-target
+               :where [:and
+                       [:= account-id [:bind account-id]]
+                       [:= local-email-id [:bind local-email-id]]]
+               :limit 1]
             present))
          (move-source
           (chidu-sql-one database
               [:select [[source mailbox:remote-mailbox-id]]
-                       :from [:as jmap-mailbox-move-target target]
-                       :joins
-                       [[:inner [:as jmap-mailbox-move move]
-                                :on [:and
-                                     [:= move:operation-id target:operation-id]
-                                     [:= move:account-id target:account-id]]]
-                        [:inner [:as jmap-mailbox mailbox]
-                                :on [:and
-                                     [:= mailbox:account-id move:account-id]
-                                     [:= mailbox:mailbox-id move:source-mailbox-id]]]]
-                       :where [:and
-                               [:= target:account-id [:bind account-id]]
-                               [:= target:local-email-id [:bind local-email-id]]]
-                       :limit 1]
+               :from [:as jmap-mailbox-move-target target]
+               :joins
+               [[:inner [:as jmap-mailbox-move move]
+                 :on [:and
+                      [:= move:operation-id target:operation-id]
+                      [:= move:account-id target:account-id]]]
+                [:inner [:as jmap-mailbox mailbox]
+                 :on [:and
+                      [:= mailbox:account-id move:account-id]
+                      [:= mailbox:mailbox-id move:source-mailbox-id]]]]
+               :where [:and
+                       [:= target:account-id [:bind account-id]]
+                       [:= target:local-email-id [:bind local-email-id]]]
+               :limit 1]
             source)))
     (cond
      (trash-p (vector))
@@ -459,11 +459,11 @@ ACCOUNT-ID, GENERATION-ID, and REMOTE-MAILBOX-ID identify the membership set."
    (caar
     (chidu-sql-select database
       [:select [[:call count 1]]
-               :from jmap-email-generation-mailbox
-               :where [:and
-                       [:= account-id [:bind account-id]]
-                       [:= generation-id [:bind generation-id]]
-                       [:= remote-mailbox-id [:bind remote-mailbox-id]]]]))
+       :from jmap-email-generation-mailbox
+       :where [:and
+               [:= account-id [:bind account-id]]
+               [:= generation-id [:bind generation-id]]
+               [:= remote-mailbox-id [:bind remote-mailbox-id]]]]))
    0))
 
 (defun chidu-store-sqlite--canonical-summary-records
