@@ -1092,8 +1092,6 @@ historically owns Chidu's body fold."
   (setq-local chidu-seen-target-function #'chidu-conversation--seen-target
               appkit-media-card-fallback-context-function
               #'chidu-conversation--attachment-fallback-context)
-  (setq-local filter-buffer-substring-function
-              #'appkit-ui-buffer-substring-filter)
   (buffer-disable-undo)
   (setq-local buffer-undo-list t))
 
