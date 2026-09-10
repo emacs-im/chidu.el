@@ -584,7 +584,8 @@ horizontal nesting depth."
       'chidu-conversation-body-visible-p body-visible
       'chidu-conversation-replies-collapsed-p replies-collapsed
       'rear-nonsticky
-      '(chidu-conversation-email-id
+      '(chidu-browse-source-url
+        chidu-conversation-email-id
         chidu-conversation-remote-email-id
         chidu-conversation-actual-depth
         chidu-conversation-visual-depth
@@ -1076,7 +1077,8 @@ historically owns Chidu's body fold."
   :doc "Keymap for `chidu-conversation-mode'."
   :parent special-mode-map
   "?" #'chidu-dispatch
-  "RET" #'chidu-conversation-focus
+  "RET" #'chidu-activate-at-point
+  "<return>" #'chidu-activate-at-point
   "!" #'chidu-mark-read
   "R" #'chidu-mark-unread
   "s" #'chidu-toggle-read

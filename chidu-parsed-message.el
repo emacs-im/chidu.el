@@ -273,6 +273,8 @@ Refresh its remote Blob when REFRESH-EMPTY-P and CONTEXT has no message."
   :parent special-mode-map
   "?" #'chidu-dispatch
   "g" #'chidu-parsed-message-refresh
+  "RET" #'chidu-activate-at-point
+  "<return>" #'chidu-activate-at-point
   "TAB" #'chidu-attachment-toggle-inline-at-point-exact
   "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
   "q" #'quit-window)

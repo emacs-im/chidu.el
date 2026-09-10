@@ -103,16 +103,21 @@
     (insert html) (shr-render-region start (point))
     (nreverse embedded-attachments)))
 
-(defcustom chidu-message-body-fontify-functions '(chidu-message-github-fontify)
-  "Functions offering display-only highlighting for plain-text mail bodies.
-Each function receives (TEXT SENDER), where SENDER is the parsed From email
-address, and returns TEXT with faces or nil when it does not apply.  First
-non-nil result wins.  Results that change source characters are rejected.
+(defcustom chidu-message-body-render-functions '(chidu-message-github-render)
+  "Functions offering sender-specific presentation of committed mail bodies.
+Each receives (BODY SENDER VIEW CONTEXT), where SENDER is the parsed From
+address.  Return nil without inserting to decline, or (t . ATTACHMENTS) after
+insertion, listing attachments represented inline.  First handled result wins.
+Renderers preserve stored bodies and reader modes, and never perform external
+actions.  Set to nil to use ordinary MIME presentation for every sender."
+  :type 'hook
+  :group 'chidu)
 
-Successful native highlighting replaces Chidu's quote/name heuristics for
-that body, without changing the reader's major mode.  HTML bodies are never
-passed to these functions.  Set this option to nil to use ordinary mail
-presentation for every sender."
+(defcustom chidu-message-body-annotate-functions '(chidu-message-github-annotate)
+  "Functions adding provider actions to an inserted plain-text mail body.
+Each receives (START END SENDER) and may add text properties, but must not
+change source characters or perform external actions.  HTML is excluded.
+Set this option to nil to disable provider-specific links."
   :type 'hook
   :group 'chidu)
 
@@ -120,7 +125,7 @@ presentation for every sender."
     (body &key sender participants view context)
   "Insert locally committed Email BODY for VIEW and CONTEXT.
 
-SENDER is the parsed From email address supplied to body highlighters.
+SENDER is the parsed From email address supplied to body renderers.
 PARTICIPANTS supplies thread-local identity highlighting for ordinary mail.
 Return the attachments represented inline by the chosen HTML body, if any."
   (when (chidu-store-email-body-encoding-problem-p body)
@@ -131,24 +136,23 @@ Return the attachments represented inline by the chosen HTML body, if any."
     (insert (propertize
              "This body was truncated at the configured per-part limit.\n\n"
              'face 'warning)))
-  (let ((text (chidu-store-email-body-text-content body))
-        (html (chidu-store-email-body-html-content body))
-        (start (point))
-        native embedded-attachments)
-    (cond
-     ((not (string-empty-p text))
-      (let ((result (run-hook-with-args-until-success
-                     'chidu-message-body-fontify-functions
-                     (substring-no-properties text) sender)))
-        (when (equal text result)
-          (setq native result)))
-      (insert (or native text)))
-     ((not (string-empty-p html))
-      (setq embedded-attachments
-            (chidu-message-insert-html html view context)))
-     (t (insert (propertize "No displayable text body." 'face 'shadow))))
-    (unless native
-      (chidu-text-present-region start (point) participants))
+  (let* ((text (chidu-store-email-body-text-content body))
+         (html (chidu-store-email-body-html-content body))
+         (start (point))
+         (rendered (run-hook-with-args-until-success
+                    'chidu-message-body-render-functions body sender view context))
+         (embedded-attachments (cdr rendered)))
+    (unless rendered
+      (cond
+       ((not (string-empty-p text)) (insert text))
+       ((not (string-empty-p html))
+        (setq embedded-attachments
+              (chidu-message-insert-html html view context)))
+       (t (insert (propertize "No displayable text body." 'face 'shadow))))
+      (chidu-text-present-region start (point) participants)
+      (unless (string-empty-p text)
+        (run-hook-with-args 'chidu-message-body-annotate-functions
+                           start (point) sender)))
     embedded-attachments))
 
 (cl-defstruct
@@ -377,6 +381,8 @@ Refresh its remote body when REFRESH-EMPTY-P and CONTEXT has no body."
   :parent special-mode-map
   "?" #'chidu-dispatch
   "g" #'chidu-message-refresh
+  "RET" #'chidu-activate-at-point
+  "<return>" #'chidu-activate-at-point
   "!" #'chidu-mark-read
   "R" #'chidu-mark-unread
   "s" #'chidu-toggle-read

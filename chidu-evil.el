@@ -17,6 +17,7 @@
 ;;; Code:
 
 (require 'appkit-evil)
+(require 'chidu-browse)
 (declare-function chidu-dispatch "chidu-transient" ())
 
 (declare-function appkit-directory-activate "appkit-directory" ())
@@ -296,8 +297,8 @@ surface-specific actions."
     (:map chidu-conversation-mode-map
      :nm
      "?" #'chidu-dispatch
-     "RET" #'chidu-conversation-focus
-     "<return>" #'chidu-conversation-focus
+     "RET" #'chidu-activate-at-point
+     "<return>" #'chidu-activate-at-point
      ;; Bind only the distinct GUI <tab> event so ordinary TAB/C-i keeps Evil's
      ;; jump-list meaning.  The DWIM checks an exact attachment card before the
      ;; surrounding Email body fold.
@@ -305,6 +306,7 @@ surface-specific actions."
      "!" #'chidu-mark-read
      "R" #'chidu-mark-unread
      "g r" #'chidu-conversation-refresh
+     "g o" #'chidu-browse-at-point
      "g s" #'chidu-toggle-read
      "g j" #'chidu-conversation-next-entry
      "g k" #'chidu-conversation-previous-entry
@@ -316,16 +318,22 @@ surface-specific actions."
     (:map chidu-message-mode-map
      :nm
      "?" #'chidu-dispatch
+     "RET" #'chidu-activate-at-point
+     "<return>" #'chidu-activate-at-point
      "!" #'chidu-mark-read
      "R" #'chidu-mark-unread
      "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
      "g r" #'chidu-message-refresh
+     "g o" #'chidu-browse-at-point
      "g s" #'chidu-toggle-read)
     (:map chidu-parsed-message-mode-map
      :nm
      "?" #'chidu-dispatch
+     "RET" #'chidu-activate-at-point
+     "<return>" #'chidu-activate-at-point
      "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
-     "g r" #'chidu-parsed-message-refresh)))
+     "g r" #'chidu-parsed-message-refresh
+     "g o" #'chidu-browse-at-point)))
 
 (defun chidu-evil--refresh-live-buffers ()
   "Refresh Evil projections in existing Chidu application buffers."

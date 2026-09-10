@@ -153,7 +153,7 @@ Message fold 和 replies fold 相互独立。
 
 | key | action |
 |-----+--------|
-| =RET= | 将 point 邮件设为新的 focus |
+| =RET= | 激活 point 的链接或控件；否则将该邮件设为新的 focus |
 | =v= | 显示或隐藏当前正文 |
 | =TAB= | 切换当前 attachment inline 状态，否则切换回复子树 |
 | =? t=/=? O=/=? C= | toggle、open 或 close 回复子树 |
@@ -166,7 +166,16 @@ Message fold 和 replies fold 相互独立。
 * 正文与附件
 
 Standalone reader 和展开的 Conversation entry 都先读取已缓存正文。
-纯文本优先；没有纯文本时使用 =shr= 渲染本地 HTML，并禁止任意远程图片请求。
+普通邮件纯文本优先；没有纯文本时使用 =shr= 渲染本地 HTML，并禁止任意远程图片请求。
+
+GitHub 通知优先把 HTML 解析为 Appkit 原生正文，不使用 SHR 或整封 Markdown 高亮。
+引用、代码和链接采用 HTML 的语义边界；明确的 review diff 与带语言标记的代码使用原生高亮。
+原始 MIME 内容不变，显示与复制的是语义正文。HTML 不可用时退回纯文本。
+=chidu-message-github-code-modes= 控制代码语言映射；将 =chidu-message-body-render-functions=
+设为 nil 可恢复所有发件人的普通 MIME 展示。
+
+三个阅读界面的 =RET= 都激活当前位置的链接或控件。Evil 的 =g o= 打开当前邮件的 GitHub
+原帖，保留评论锚点，不受 point 所在链接影响，也不会查找相邻邮件或获取缺失正文。
 
 只有当前 Email 的 attachment manifest 能够通过 =cid:= 或 Content-Location 唯一证明的图片，才可以在正文中显示。
 未缓存图片只显示明确占位，必须由用户主动下载。
