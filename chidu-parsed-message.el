@@ -11,6 +11,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'seq)
 (require 'subr-x)
 (require 'appkit-core)
 (require 'appkit-surface)
@@ -142,11 +143,12 @@
                (cond
                 (body
                  (setq embedded-attachments
-                       (chidu-message-insert-body body :participants
-                                                  (chidu-parsed-message--participants
-                                                   message)
-                                                  :view view :context
-                                                  context)))
+                       (chidu-message-insert-body
+                        body
+                        :sender (when-let* ((from (seq-first (chidu-store-parsed-message-from message))))
+                                  (chidu-store-email-address-email from))
+                        :participants (chidu-parsed-message--participants message)
+                        :view view :context context)))
                 (problem
                  (insert
                   (when message

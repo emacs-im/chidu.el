@@ -16,6 +16,7 @@
 (require 'appkit-position)
 (require 'appkit-transaction)
 (require 'appkit-ui)
+(require 'chidu-message-github)
 (require 'appkit-presentation)
 (require 'chidu-attachment)
 (require 'chidu-body-sync)
@@ -102,12 +103,26 @@
     (insert html) (shr-render-region start (point))
     (nreverse embedded-attachments)))
 
+(defcustom chidu-message-body-fontify-functions '(chidu-message-github-fontify)
+  "Functions offering display-only highlighting for plain-text mail bodies.
+Each function receives (TEXT SENDER), where SENDER is the parsed From email
+address, and returns TEXT with faces or nil when it does not apply.  First
+non-nil result wins.  Results that change source characters are rejected.
+
+Successful native highlighting replaces Chidu's quote/name heuristics for
+that body, without changing the reader's major mode.  HTML bodies are never
+passed to these functions.  Set this option to nil to use ordinary mail
+presentation for every sender."
+  :type 'hook
+  :group 'chidu)
+
 (cl-defun chidu-message-insert-body
-    (body &key participants view context)
+    (body &key sender participants view context)
   "Insert locally committed Email BODY for VIEW and CONTEXT.
 
-PARTICIPANTS supplies thread-local identity highlighting.  Return the JMAP
-attachments represented inline by the chosen HTML body, if any."
+SENDER is the parsed From email address supplied to body highlighters.
+PARTICIPANTS supplies thread-local identity highlighting for ordinary mail.
+Return the attachments represented inline by the chosen HTML body, if any."
   (when (chidu-store-email-body-encoding-problem-p body)
     (insert (propertize
              "Some body text could not be decoded cleanly.\n\n"
@@ -119,14 +134,21 @@ attachments represented inline by the chosen HTML body, if any."
   (let ((text (chidu-store-email-body-text-content body))
         (html (chidu-store-email-body-html-content body))
         (start (point))
-        embedded-attachments)
+        native embedded-attachments)
     (cond
-     ((not (string-empty-p text)) (insert text))
+     ((not (string-empty-p text))
+      (let ((result (run-hook-with-args-until-success
+                     'chidu-message-body-fontify-functions
+                     (substring-no-properties text) sender)))
+        (when (equal text result)
+          (setq native result)))
+      (insert (or native text)))
      ((not (string-empty-p html))
       (setq embedded-attachments
             (chidu-message-insert-html html view context)))
      (t (insert (propertize "No displayable text body." 'face 'shadow))))
-    (chidu-text-present-region start (point) participants)
+    (unless native
+      (chidu-text-present-region start (point) participants))
     embedded-attachments))
 
 (cl-defstruct
@@ -199,11 +221,10 @@ attachments represented inline by the chosen HTML body, if any."
                (cond
                 (body
                  (setq embedded-attachments
-                       (chidu-message-insert-body body :participants
-                                                  (chidu-message-state-participants
-                                                   state)
-                                                  :view view :context
-                                                  context)))
+                       (chidu-message-insert-body
+                        body :sender (chidu-store-email-summary-row-from-email row)
+                        :participants (chidu-message-state-participants state)
+                        :view view :context context)))
                 (problem
                  (insert (chidu-store-email-summary-row-preview row)
                          "\n\n"

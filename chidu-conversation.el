@@ -457,6 +457,8 @@ horizontal nesting depth."
            (setq embedded-attachments
                  (chidu-message-insert-body
                   body
+                  :sender (chidu-store-email-summary-row-from-email
+                           (chidu-store-conversation-row-summary-row row))
                   :participants (chidu-conversation--participants state)
                   :view view
                   :context context)))
