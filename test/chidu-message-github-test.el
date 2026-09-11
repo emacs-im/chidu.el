@@ -209,5 +209,52 @@
         (search-forward "reply")
         (should-not (get-text-property (match-beginning 0) 'face))))))
 
+(ert-deftest chidu-message-github-preserves-passive-task-checkboxes ()
+  (skip-unless (libxml-available-p))
+  (let* ((html (concat
+                "<ul><li><input type=\"checkbox\" disabled> Todo "
+                "<a href=\"https://github.com/example/project/issues/7\">link</a></li>"
+                "<li><p><input type=\"CHECKBOX\" checked=\"\" disabled> Done</p></li>"
+                "<li><input type=\"checkbox\" checked=\"false\" onclick=\"bad()\"> Boolean</li>"
+                "<li>Ordinary<ul><li><input type=\"checkbox\"> Nested</li></ul></li></ul>"))
+         (document (car (chidu-message-github-parse html)))
+         (body (chidu-store-email-body-create :text-content "plain" :html-content html))
+         opened)
+    (should (equal (appkit-markup-plain-text document)
+                   "- [ ] Todo link\n- [x] Done\n- [x] Boolean\n- Ordinary\n  - [ ] Nested"))
+    (with-temp-buffer
+      (cl-letf (((symbol-function 'browse-url)
+                 (lambda (url &rest _) (push url opened)))
+                ((symbol-function 'url-retrieve)
+                 (lambda (&rest _) (ert-fail "Checkbox fetched a resource"))))
+        (chidu-message-insert-body body :sender "notifications@github.com" :format 'html)
+        (should-not opened)
+        (should (equal (buffer-substring-no-properties (point-min) (point-max))
+                       "[ ] Todo link\n[x] Done\n[x] Boolean\nOrdinary\n[ ] Nested"))
+        (dolist (label '("[ ] Todo" "[x] Done" "[x] Boolean" "[ ] Nested"))
+          (goto-char (point-min))
+          (search-forward label)
+          (goto-char (match-beginning 0))
+          (should-not (get-text-property (point) appkit-ui-action-property))
+          (should-not (get-text-property (point) 'button))
+          (should-error (chidu-activate-at-point) :type 'user-error))
+        ;; An adjacent real link still owns its original action.
+        (goto-char (point-min))
+        (search-forward "link")
+        (appkit-ui-activate-at (1- (point)))
+        (should (equal opened '("https://github.com/example/project/issues/7")))))))
+
+(ert-deftest chidu-message-github-still-discards-other-inputs-and-forms ()
+  (skip-unless (libxml-available-p))
+  (let* ((html (concat
+                "<p>Visible</p><input value=\"secret\"><input type=\"text\" value=\"secret\">"
+                "<input type=\"hidden\" checked><input type=\"radio\" checked>"
+                "<input type=\"image\" src=\"https://example.test/tracker\">"
+                "<input type=\"submit\" value=\"secret\">"
+                "<form><input type=\"checkbox\" checked>secret</form>"
+                "<textarea>secret</textarea>"))
+         (document (car (chidu-message-github-parse html))))
+    (should (equal (appkit-markup-plain-text document) "Visible"))))
+
 (provide 'chidu-message-github-test)
 ;;; chidu-message-github-test.el ends here

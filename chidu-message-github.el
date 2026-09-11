@@ -45,7 +45,7 @@ function name and rendering never installs a grammar."
   :group 'chidu)
 
 (defconst chidu-message-github--discard-tags
-  '(head script style iframe frame frameset object embed form input textarea
+  '(head script style iframe frame frameset object embed form textarea
     select option button video audio source track canvas svg math link meta
     base template noscript)
   "Elements whose complete subtrees are not notification text.")
@@ -94,6 +94,13 @@ function name and rendering never installs a grammar."
       ((not (consp node)) nil)
       ((memq (dom-tag node) chidu-message-github--discard-tags) nil)
       ((eq (dom-tag node) 'br) (list (appkit-markup-line-break)))
+      ((eq (dom-tag node) 'input)
+       ;; Retain passive task state, never a form control or its attributes.
+       ;; CHECKED is a boolean HTML attribute: presence, not its string value.
+       (when (equal (downcase (or (dom-attr node 'type) "")) "checkbox")
+         (list (appkit-markup-text
+                (if (assq 'checked (dom-attributes node)) "[x]" "[ ]")
+                styles))))
       ((eq (dom-tag node) 'img)
        ;; No URL is retained or fetched, including notification tracking pixels.
        (when-let* ((alt (dom-attr node 'alt)) ((not (string-empty-p alt))))
