@@ -18,6 +18,7 @@
 (require 'appkit-name-color)
 (require 'chidu-store)
 (require 'chidu-browse)
+(require 'chidu-text)
 
 (defcustom chidu-message-github-sender-addresses '("notifications@github.com")
   "Parsed From addresses whose bodies use GitHub presentation.
@@ -305,7 +306,8 @@ fallback, unless FORMAT explicitly requests HTML."
          (car parsed) :final-newline-p nil :interactive-p t
          :link-action (lambda (url) (apply-partially #'chidu-browse-open url))
          :object-inserter #'chidu-message-github--insert-object
-         :preformatted-inserter #'chidu-message-github--insert-code)
+         :preformatted-inserter #'chidu-message-github--insert-code
+         :quote-style #'chidu-text-markup-quote-style :block-spacing t)
         (save-excursion
           (goto-char start)
           (when (looking-at

@@ -183,5 +183,31 @@
                     (chidu-message-insert-body body :sender "sender" :view 'view :context 'context)))
         (should (equal "native" (buffer-string)))))))
 
+(ert-deftest chidu-message-github-preserves-quote-blocks-and-uses-mail-styling ()
+  (skip-unless (libxml-available-p))
+  (let* ((html (concat "<p>intro</p><blockquote><p>quoted</p></blockquote>"
+                       "<p>reply</p><blockquote><p>second quote</p></blockquote><p>end</p>"))
+         (blocks (appkit-markup-document-blocks (car (chidu-message-github-parse html))))
+         (body (chidu-store-email-body-create :text-content "plain" :html-content html)))
+    ;; Parsing retains paragraph and quote boundaries; spacing belongs to UI.
+    (should (= 5 (length blocks)))
+    (dolist (index '(1 3))
+      (should (appkit-markup-quote-p (nth index blocks)))
+      (should (= 1 (length (appkit-markup-quote-blocks (nth index blocks))))))
+    (with-temp-buffer
+      (cl-letf (((symbol-function 'chidu-text--quote-background-face)
+                 (lambda (_) '(:background "gray20"))))
+        (chidu-message-insert-body body :sender "notifications@github.com")
+        (should (equal (buffer-substring-no-properties (point-min) (point-max))
+                       "intro\n\nquoted\n\nreply\n\nsecond quote\n\nend"))
+        (goto-char (point-min))
+        (search-forward "quoted")
+        (let ((start (match-beginning 0)))
+          (should (equal (get-text-property start 'line-prefix)
+                         (plist-get (chidu-text-markup-quote-style 1) :prefix)))
+          (should (equal '(:background "gray20") (get-text-property start 'face))))
+        (search-forward "reply")
+        (should-not (get-text-property (match-beginning 0) 'face))))))
+
 (provide 'chidu-message-github-test)
 ;;; chidu-message-github-test.el ends here

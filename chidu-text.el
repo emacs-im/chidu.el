@@ -371,6 +371,15 @@ INDEX maps a downcased alias onto one participant or the symbol `ambiguous'."
          0 (length prefix) background-face 'append prefix))
       prefix)))
 
+(defun chidu-text-markup-quote-style (depth)
+  "Return Appkit quote styling matching plain mail at DEPTH."
+  (let* ((background (chidu-text--quote-background-face depth))
+         (prefix (concat (appkit-ui-vbar-string
+                          (chidu-text--quote-accent-face depth)) " ")))
+    (when background
+      (add-face-text-property 0 (length prefix) background 'append prefix))
+    (list :prefix prefix :face background)))
+
 (defun chidu-text-apply-quote-presentation (start end)
   "Present RFC-style quote markers between START and END.
 
