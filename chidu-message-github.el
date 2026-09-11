@@ -307,7 +307,7 @@ fallback, unless FORMAT explicitly requests HTML."
          :link-action (lambda (url) (apply-partially #'chidu-browse-open url))
          :object-inserter #'chidu-message-github--insert-object
          :preformatted-inserter #'chidu-message-github--insert-code
-         :quote-style #'chidu-text-markup-quote-style :block-spacing t)
+         :quote-style #'chidu-text-markup-quote-style)
         (save-excursion
           (goto-char start)
           (when (looking-at
