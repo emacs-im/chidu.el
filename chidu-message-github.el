@@ -289,10 +289,11 @@ oversized, or unsupported HTML falls back at the caller to the MIME text part."
     (put-text-property start (1+ start) 'chidu-browse-source-url url)
     (put-text-property start (1+ start) 'rear-nonsticky t)))
 
-(defun chidu-message-github-render (body sender _view _context)
+(defun chidu-message-github-render (body sender _view _context &optional format)
   "Insert GitHub HTML from BODY selected by SENDER, without SHR.
-Return (t) when handled, with no inline attachment consumption.  Images remain
-on Chidu's attachment path.  Return nil to use the ordinary MIME text fallback."
+Return (html) when handled, with no inline attachment consumption.  Images
+remain on Chidu's attachment path.  Return nil to use the ordinary MIME text
+fallback, unless FORMAT explicitly requests HTML."
   (when (chidu-message-github--sender-p sender)
     (let* ((html (chidu-store-email-body-html-content body))
            (parsed (and (not (string-empty-p html))
@@ -319,11 +320,12 @@ on Chidu's attachment path.  Return nil to use the ordinary MIME text fallback."
              (with-temp-buffer
                (insert (chidu-store-email-body-text-content body))
                (nth 3 (chidu-message-github--footer)))))
-        '(t))
+        '(html))
        ((and (not (string-empty-p html))
-             (string-empty-p (chidu-store-email-body-text-content body)))
+             (or (eq format 'html)
+                 (string-empty-p (chidu-store-email-body-text-content body))))
         (insert (propertize "Unable to display this HTML notification." 'face 'warning))
-        '(t))))))
+        '(html))))))
 
 (defun chidu-message-github--footer ()
   "Find the complete trailing plain-text notification footer.

@@ -35,7 +35,18 @@
      (:constructor chidu-parsed-message-state-create))
   "View-local state for one parsed attached message." account blob-id
   profile-version source-name context (phase 'initial) problem
-  media-phase media-message media-key)
+  media-phase media-message media-key body-format)
+
+(defun chidu-parsed-message--select-body-format (view format)
+  "Select FORMAT for the live attached-message VIEW without requesting a parse."
+  (unless (appkit-surface-live-p view) (user-error "Reader is no longer open"))
+  (let* ((state (chidu-parsed-message--state view))
+         (context (chidu-parsed-message-state-context state))
+         (message (and context (chidu-store-parsed-blob-context-message context))))
+    (chidu-message-check-body-format
+     (and message (chidu-store-parsed-message-body message)) format)
+    (setf (chidu-parsed-message-state-body-format state) format)
+    (chidu-surface-refresh view)))
 
 (defun chidu-parsed-message--set-media-phase (model phase &optional problem key)
   "Commit media PHASE, PROBLEM and pending open KEY to reader MODEL."
@@ -148,7 +159,10 @@
                         :sender (when-let* ((from (seq-first (chidu-store-parsed-message-from message))))
                                   (chidu-store-email-address-email from))
                         :participants (chidu-parsed-message--participants message)
-                        :view view :context context)))
+                        :view view :context context
+                        :format (chidu-parsed-message-state-body-format state)
+                        :on-format-change
+                        (apply-partially #'chidu-parsed-message--select-body-format view))))
                 (problem
                  (insert
                   (when message

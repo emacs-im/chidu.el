@@ -105,11 +105,14 @@
 
 (defcustom chidu-message-body-render-functions '(chidu-message-github-render)
   "Functions offering sender-specific presentation of committed mail bodies.
-Each receives (BODY SENDER VIEW CONTEXT), where SENDER is the parsed From
-address.  Return nil without inserting to decline, or (t . ATTACHMENTS) after
-insertion, listing attachments represented inline.  First handled result wins.
-Renderers preserve stored bodies and reader modes, and never perform external
-actions.  Set to nil to use ordinary MIME presentation for every sender."
+Each receives (BODY SENDER VIEW CONTEXT FORMAT), where SENDER is the parsed
+From address and FORMAT is nil for automatic selection or `html' for an
+explicit HTML choice.  An explicit `plain' choice bypasses these functions.
+Return nil without inserting to decline, or (SELECTED . ATTACHMENTS) after
+insertion, where SELECTED is `plain' or `html'.  List attachments represented
+inline; first handled result wins.  Renderers preserve stored bodies and reader
+modes, and never perform external actions.  Set to nil to use ordinary MIME
+presentation for every sender."
   :type 'hook
   :group 'chidu)
 
@@ -121,13 +124,45 @@ Set this option to nil to disable provider-specific links."
   :type 'hook
   :group 'chidu)
 
+(defun chidu-message-body-formats (body)
+  "Return the available `plain' and `html' representations of cached BODY."
+  (when body
+    (delq nil
+          (list (unless (string-empty-p (chidu-store-email-body-text-content body))
+                  'plain)
+                (unless (string-empty-p (chidu-store-email-body-html-content body))
+                  'html)))))
+
+(defun chidu-message-check-body-format (body format)
+  "Require cached BODY to support FORMAT, or nil for automatic selection."
+  (unless (and body (or (null format) (memq format (chidu-message-body-formats body))))
+    (user-error "This body representation is no longer available")))
+
+(defun chidu-message--insert-body-selector (formats selected select)
+  "Insert FORMATS with SELECTED active; SELECT receives the chosen format."
+  (insert (propertize "Body: " 'face 'shadow))
+  (dolist (format formats)
+    (unless (eq format (car formats)) (insert "   "))
+    (let ((start (point))
+          (label (if (eq format 'plain) "text/plain" "text/html")))
+      (insert (format "(%s) %s" (if (eq format selected) "*" " ") label))
+      (appkit-ui-add-action
+       start (point) (apply-partially select format)
+       :help-echo (concat "Display cached " label " body")
+       :face (if (eq format selected) 'bold 'link))))
+  (insert "\n\n"))
+
 (cl-defun chidu-message-insert-body
-    (body &key sender participants view context)
+    (body &key sender participants view context format on-format-change)
   "Insert locally committed Email BODY for VIEW and CONTEXT.
 
 SENDER is the parsed From email address supplied to body renderers.
 PARTICIPANTS supplies thread-local identity highlighting for ordinary mail.
-Return the attachments represented inline by the chosen HTML body, if any."
+FORMAT is nil for automatic selection, or an explicit `plain' or `html'.
+If that representation disappears after refresh, use automatic selection.
+ON-FORMAT-CHANGE receives a new choice and enables the inline selector
+when both representations exist.  It must re-render the reader, including
+attachment cards.  Return attachments represented inline by the chosen body."
   (when (chidu-store-email-body-encoding-problem-p body)
     (insert (propertize
              "Some body text could not be decoded cleanly.\n\n"
@@ -138,28 +173,51 @@ Return the attachments represented inline by the chosen HTML body, if any."
              'face 'warning)))
   (let* ((text (chidu-store-email-body-text-content body))
          (html (chidu-store-email-body-html-content body))
+         (formats (chidu-message-body-formats body))
+         (requested (and (memq format formats) format))
          (start (point))
-         (rendered (run-hook-with-args-until-success
-                    'chidu-message-body-render-functions body sender view context))
+         (rendered (unless (eq requested 'plain)
+                     (run-hook-with-args-until-success
+                      'chidu-message-body-render-functions
+                      body sender view context requested)))
+         (selected (car rendered))
          (embedded-attachments (cdr rendered)))
     (unless rendered
       (cond
-       ((not (string-empty-p text)) (insert text))
-       ((not (string-empty-p html))
-        (setq embedded-attachments
-              (chidu-message-insert-html html view context)))
+       ((and (not (eq requested 'html)) (memq 'plain formats))
+        (setq selected 'plain)
+        (insert text))
+       ((memq 'html formats)
+        (setq selected 'html
+              embedded-attachments (chidu-message-insert-html html view context)))
        (t (insert (propertize "No displayable text body." 'face 'shadow))))
       (chidu-text-present-region start (point) participants)
-      (unless (string-empty-p text)
+      (when (eq selected 'plain)
         (run-hook-with-args 'chidu-message-body-annotate-functions
                            start (point) sender)))
+    ;; Insert after rendering so the indicator reports the representation that
+    ;; actually succeeded, including a provider's automatic plain fallback.
+    (when (and on-format-change (> (length formats) 1))
+      (save-excursion
+        (goto-char start)
+        (chidu-message--insert-body-selector formats selected on-format-change)))
     embedded-attachments))
 
 (cl-defstruct
     (chidu-message-state (:constructor chidu-message-state-create))
   "View-local state for one selected Email." row account mailbox
   body-context participants (phase 'initial) message media-phase
-  media-message media-key)
+  media-message media-key body-format)
+
+(defun chidu-message--select-body-format (view format)
+  "Select FORMAT for the live standalone VIEW without fetching mail."
+  (unless (appkit-surface-live-p view) (user-error "Reader is no longer open"))
+  (let* ((state (chidu-message--state view))
+         (context (chidu-message-state-body-context state)))
+    (chidu-message-check-body-format
+     (and context (chidu-store-email-body-context-body context)) format)
+    (setf (chidu-message-state-body-format state) format)
+    (chidu-surface-refresh view)))
 
 (defun chidu-message--set-media-phase (model phase &optional problem key)
   "Commit media PHASE, PROBLEM and pending open KEY to reader MODEL."
@@ -228,7 +286,10 @@ Return the attachments represented inline by the chosen HTML body, if any."
                        (chidu-message-insert-body
                         body :sender (chidu-store-email-summary-row-from-email row)
                         :participants (chidu-message-state-participants state)
-                        :view view :context context)))
+                        :view view :context context
+                        :format (chidu-message-state-body-format state)
+                        :on-format-change
+                        (apply-partially #'chidu-message--select-body-format view))))
                 (problem
                  (insert (chidu-store-email-summary-row-preview row)
                          "\n\n"

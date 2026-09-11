@@ -742,14 +742,14 @@
     (set-file-modes root 448)
     (unwind-protect
         (cl-labels
-            ((render nil
+            ((render (&optional format)
                (with-current-buffer (appkit-surface-buffer view)
                  (let ((inhibit-read-only t))
                    (erase-buffer)
                    (let
                        ((embedded
                          (chidu-message-insert-body body :view view
-                                                    :context context)))
+                                                    :context context :format format)))
                      (insert "\n")
                      (chidu-attachment-insert-cards view context
                                                     :embedded-attachments
@@ -782,6 +782,19 @@
               (goto-char (point-min))
               (should (search-forward "Remote image" nil t))
               (should-not (appkit-media-card-context-at-point))))
+          ;; Changing representation reprojects the same attachment manifest:
+          ;; inline resources disappear from cards only while HTML uses them.
+          (setq body (chidu-store-email-body-with body :text-content "Plain alternative")
+                context (chidu-store-email-body-context-with context :body body))
+          (should-not (render 'plain))
+          (with-current-buffer (appkit-surface-buffer view)
+            (should (string-match-p "Attachments · 2" (buffer-string)))
+            (should-not (text-property-not-all (point-min) (point-max)
+                                              'chidu-embedded-attachment nil)))
+          (should (equal (list cid-image location-image) (render 'html)))
+          (with-current-buffer (appkit-surface-buffer view)
+            (should-not (string-match-p "Attachments ·" (buffer-string))))
+          (should (= requests 0))
           (let
               ((path
                 (chidu-attachment-cache-path app context cid-image))
@@ -801,7 +814,7 @@
                  ((symbol-function 'appkit-media-insert-image-slices)
                   (lambda (&rest _)
                     (insert "[rendered embedded image]"))))
-              (render) (should (equal path preview-file))
+              (render 'html) (should (equal path preview-file))
               (should (= requests 0))
               (with-current-buffer (appkit-surface-buffer view)
                 (goto-char (point-min))

@@ -169,13 +169,14 @@
                                                :view 'view :context 'context)))))
     (let ((chidu-message-body-render-functions
            (list (lambda (&rest _) nil)
-                 (lambda (received sender view context)
+                 (lambda (received sender view context format)
+                   (should-not format)
                    (should (eq body received))
                    (should (equal sender "sender"))
                    (should (eq view 'view))
                    (should (eq context 'context))
                    (insert "native")
-                   (cons t attachments))
+                   (cons 'html attachments))
                  (lambda (&rest _) (ert-fail "First renderer must win")))))
       (with-temp-buffer
         (should (eq attachments

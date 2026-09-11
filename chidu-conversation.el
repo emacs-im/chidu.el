@@ -56,7 +56,21 @@ carry both actual and visual depth properties, but indentation is capped."
   (body-contexts (make-hash-table :test #'equal))
   (body-phases (make-hash-table :test #'equal))
   (body-messages (make-hash-table :test #'equal)) media-phase
-  media-message media-key)
+  media-message media-key
+  (body-formats (make-hash-table :test #'equal)))
+
+(defun chidu-conversation--select-body-format (view local-id format)
+  "Select FORMAT for LOCAL-ID in live VIEW without changing focus or mail."
+  (unless (appkit-surface-live-p view) (user-error "Reader is no longer open"))
+  (let* ((state (chidu-conversation--state view))
+         (row (chidu-conversation--row-for-local-id state local-id))
+         (context (and row (chidu-conversation--body-context state row))))
+    (chidu-message-check-body-format
+     (and context (chidu-store-email-body-context-body context)) format)
+    (if format
+        (puthash local-id format (chidu-conversation-state-body-formats state))
+      (remhash local-id (chidu-conversation-state-body-formats state)))
+    (chidu-surface-refresh view)))
 
 (defun chidu-conversation--set-media-phase (model phase &optional problem key)
   "Commit media PHASE, PROBLEM and pending open KEY to reader MODEL."
@@ -461,7 +475,12 @@ horizontal nesting depth."
                            (chidu-store-conversation-row-summary-row row))
                   :participants (chidu-conversation--participants state)
                   :view view
-                  :context context)))
+                  :context context
+                  :format (gethash (chidu-conversation--row-local-id row)
+                                   (chidu-conversation-state-body-formats state))
+                  :on-format-change
+                  (apply-partially #'chidu-conversation--select-body-format
+                                   view (chidu-conversation--row-local-id row)))))
           (problem
            (insert
             (propertize (format "Unable to load full message: %s" problem)

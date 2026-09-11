@@ -174,6 +174,10 @@ GitHub 通知优先把 HTML 解析为 Appkit 原生正文，不使用 SHR 或整
 =chidu-message-github-code-modes= 控制代码语言映射；将 =chidu-message-body-render-functions=
 设为 nil 可恢复所有发件人的普通 MIME 展示。
 
+两种正文都存在时，正文上方显示 =text/plain= / =text/html= 选择器，按 =RET= 或点击切换。
+选择仅保存在当前阅读视图中，Conversation 的每封邮件独立选择；普通重绘和折叠不会重置选择。
+切换同时更新附件区，不下载资源或改变邮件状态。只有一种正文时不显示选择器。
+
 三个阅读界面的 =RET= 都激活当前位置的链接或控件。Evil 的 =g o= 打开当前邮件的 GitHub
 原帖，保留评论锚点，不受 point 所在链接影响，也不会查找相邻邮件或获取缺失正文。
 
