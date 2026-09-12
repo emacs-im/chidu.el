@@ -5,6 +5,7 @@
 (require 'ert)
 (require 'evil)
 (require 'chidu)
+(require 'chidu-evil)
 (require 'chidu-conversation)
 (require 'chidu-search)
 

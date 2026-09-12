@@ -70,9 +70,6 @@
 (declare-function chidu-trash-result-committed-p
                   "chidu-trash" (result))
 
-(with-eval-after-load 'evil
-  (require 'chidu-evil))
-
 (defvar chidu--app nil
   "Current Chidu Appkit application, or nil.")
 
@@ -702,5 +699,8 @@ and opening a Summary never start it implicitly."
   (chidu))
 
 (provide 'chidu)
+
+(with-eval-after-load 'evil
+  (require 'chidu-evil nil t))
 
 ;;; chidu.el ends here
