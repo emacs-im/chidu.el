@@ -19,6 +19,8 @@
 (require 'appkit-evil)
 (require 'chidu-browse)
 (declare-function chidu-dispatch "chidu-transient" ())
+(declare-function chidu-compose "chidu-compose" (&optional account))
+(declare-function chidu-compose-attach-file "chidu-compose" (file))
 
 (declare-function appkit-directory-activate "appkit-directory" ())
 (declare-function appkit-directory-next-item "appkit-directory" ())
@@ -31,8 +33,6 @@
 (declare-function chidu-conversation-open-standalone
                   "chidu-conversation" ())
 (declare-function chidu-conversation-previous-entry "chidu-conversation" ())
-(declare-function chidu-conversation-refresh
-                  "chidu-conversation" (&optional view))
 (declare-function chidu-conversation-toggle-body "chidu-conversation" ())
 (declare-function chidu-conversation-evil-tab-dwim
                   "chidu-conversation" ())
@@ -49,7 +49,6 @@
 (declare-function chidu-contacts-compose "chidu-contacts" ())
 (declare-function chidu-contacts-next "chidu-contacts" ())
 (declare-function chidu-contacts-previous "chidu-contacts" ())
-(declare-function chidu-contact-view-refresh "chidu-contact-view" (&optional view))
 (declare-function chidu-contact-view-compose "chidu-contact-view" ())
 (declare-function chidu-drafts-open-draft "chidu-drafts" ())
 (declare-function chidu-drafts-refresh "chidu-drafts" (&optional view))
@@ -58,11 +57,7 @@
 (declare-function chidu-drafts-previous "chidu-drafts" ())
 (declare-function chidu-mark-read "chidu-seen" ())
 (declare-function chidu-mark-unread "chidu-seen" ())
-(declare-function chidu-message-refresh "chidu-message" (&optional view))
-(declare-function chidu-parsed-message-refresh
-                  "chidu-parsed-message" (&optional view))
 (declare-function chidu-refresh "chidu" ())
-(declare-function chidu-restart "chidu" ())
 (declare-function chidu-search-archive "chidu-search" ())
 (declare-function chidu-search-edit "chidu-search" ())
 (declare-function chidu-search-load-more "chidu-search" (&optional view))
@@ -93,7 +88,6 @@
 (declare-function chidu-summary-search "chidu-summary" ())
 (declare-function chidu-summary-flag-trash "chidu-summary" ())
 (declare-function chidu-summary-execute-trash-flags "chidu-summary" ())
-(declare-function chidu-toggle-read "chidu-seen" ())
 
 (defgroup chidu-evil nil
   "Optional native Evil integration for Chidu."
@@ -166,19 +160,19 @@ SEARCH-COMMAND, ARCHIVE-COMMAND, FLAG-TRASH-COMMAND,
 EXECUTE-TRASH-COMMAND, NEXT-COMMAND, and PREVIOUS-COMMAND provide the
 surface-specific actions."
   ;; Navigation and contextual actions remain available in normal and motion
-  ;; state.  Native `j'/`k', `gg'/`G', `/`, operators, and visual entry remain
-  ;; untouched.
+  ;; state.  Native `j'/`k', `gg'/`G', `/`, and visual entry remain available;
+  ;; application actions deliberately own the listed keys.
   (appkit-evil-define-keys chidu-evil--application-states map
     "?" #'chidu-dispatch
     "RET" open-command
     "<return>" open-command
     "g r" refresh-command
     "g +" more-command
-    "g s" #'chidu-toggle-read
-    "g f" search-command
+    "g s" search-command
     "g j" next-command
     "g k" previous-command
-    "o" open-message-command)
+    "o" open-message-command
+    "c" #'chidu-compose)
 
   ;; These are the standard read-only list semantics used throughout
   ;; evil-collection.  A single mark edit advances; a visual selection applies
@@ -206,8 +200,7 @@ surface-specific actions."
     "!" #'chidu-mark-read
     "R" #'chidu-mark-unread
     "a" archive-command
-    "d" flag-trash-command
-    "g s" #'chidu-toggle-read))
+    "d" flag-trash-command))
 
 (defun chidu-evil--define-keys ()
   "Install shared and surface-specific Chidu bindings."
@@ -217,17 +210,17 @@ surface-specific actions."
   (appkit-evil-map
     (:map chidu-home-mode-map
      :nm
+     "g r" #'chidu-refresh
      "?" #'chidu-dispatch
      "RET" #'appkit-directory-activate
      "<return>" #'appkit-directory-activate
      "TAB" #'appkit-directory-tab-dwim
      "<tab>" #'appkit-directory-tab-dwim
      "<backtab>" #'appkit-directory-previous-item
-     "g r" #'chidu-refresh
-     "g R" #'chidu-restart
-     "g s" #'chidu-home-sync-account
-     "g f" #'chidu-search-mail
-     "g a" #'chidu-contacts
+     "g S" #'chidu-home-sync-account
+     "g s" #'chidu-search-mail
+     "A" #'chidu-contacts
+     "c" #'chidu-compose
      "g j" #'appkit-directory-next-item
      "g k" #'appkit-directory-previous-item))
 
@@ -260,42 +253,46 @@ surface-specific actions."
   (appkit-evil-map
     (:map chidu-address-books-mode-map
      :nm
+     "g r" #'chidu-address-books-refresh
      "?" #'chidu-dispatch
      "RET" #'appkit-directory-activate
      "<return>" #'appkit-directory-activate
      "TAB" #'appkit-directory-tab-dwim
      "<tab>" #'appkit-directory-tab-dwim
      "<backtab>" #'appkit-directory-previous-item
-     "g r" #'chidu-address-books-refresh
      "g j" #'appkit-directory-next-item
      "g k" #'appkit-directory-previous-item)
     (:map chidu-contacts-mode-map
      :nm
+     "g r" #'chidu-contacts-refresh
      "?" #'chidu-dispatch
      "RET" #'chidu-contacts-open-contact
      "<return>" #'chidu-contacts-open-contact
-     "g r" #'chidu-contacts-refresh
+     "g ?" #'chidu-contacts-open-contact
      "g +" #'chidu-contacts-load-more
-     "g f" #'chidu-contacts-search
+     "g s" #'chidu-contacts-search
      "g j" #'chidu-contacts-next
      "g k" #'chidu-contacts-previous
      "c" #'chidu-contacts-compose)
     (:map chidu-contact-view-mode-map
      :nm
      "?" #'chidu-dispatch
-     "g r" #'chidu-contact-view-refresh
      "c" #'chidu-contact-view-compose)
     (:map chidu-drafts-mode-map
      :nm
+     "g r" #'chidu-drafts-refresh
      "?" #'chidu-dispatch
      "RET" #'chidu-drafts-open-draft
      "<return>" #'chidu-drafts-open-draft
-     "g r" #'chidu-drafts-refresh
      "g +" #'chidu-drafts-load-more
      "g j" #'chidu-drafts-next
      "g k" #'chidu-drafts-previous)
     (:map chidu-conversation-mode-map
      :nm
+     ;; Read-state actions remain in the menu, not on message action keys.
+     "!" #'undefined
+     "R" #'undefined
+     "s" #'undefined
      "?" #'chidu-dispatch
      "RET" #'chidu-activate-at-point
      "<return>" #'chidu-activate-at-point
@@ -303,11 +300,7 @@ surface-specific actions."
      ;; jump-list meaning.  The DWIM checks an exact attachment card before the
      ;; surrounding Email body fold.
      "<tab>" #'chidu-conversation-evil-tab-dwim
-     "!" #'chidu-mark-read
-     "R" #'chidu-mark-unread
-     "g r" #'chidu-conversation-refresh
-     "g o" #'chidu-browse-at-point
-     "g s" #'chidu-toggle-read
+     "g x" #'chidu-browse-at-point
      "g j" #'chidu-conversation-next-entry
      "g k" #'chidu-conversation-previous-entry
      "o" #'chidu-conversation-open-standalone
@@ -317,23 +310,24 @@ surface-specific actions."
      "z o" #'chidu-conversation-open-replies)
     (:map chidu-message-mode-map
      :nm
+     "!" #'undefined
+     "R" #'undefined
+     "s" #'undefined
      "?" #'chidu-dispatch
      "RET" #'chidu-activate-at-point
      "<return>" #'chidu-activate-at-point
-     "!" #'chidu-mark-read
-     "R" #'chidu-mark-unread
      "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
-     "g r" #'chidu-message-refresh
-     "g o" #'chidu-browse-at-point
-     "g s" #'chidu-toggle-read)
+     "g x" #'chidu-browse-at-point)
     (:map chidu-parsed-message-mode-map
      :nm
      "?" #'chidu-dispatch
      "RET" #'chidu-activate-at-point
      "<return>" #'chidu-activate-at-point
      "<tab>" #'chidu-attachment-toggle-inline-at-point-exact
-     "g r" #'chidu-parsed-message-refresh
-     "g o" #'chidu-browse-at-point)))
+     "g x" #'chidu-browse-at-point)
+    (:map chidu-compose-mode-map
+     :nm
+     "Z f" #'chidu-compose-attach-file)))
 
 (defun chidu-evil--refresh-live-buffers ()
   "Refresh Evil projections in existing Chidu application buffers."
@@ -353,6 +347,14 @@ Safe to call multiple times."
 
 (with-eval-after-load 'evil
   (chidu-evil-setup))
+
+(with-eval-after-load 'evil-snipe
+  (dolist (mode (append chidu-evil--application-modes
+                        chidu-evil--editable-modes))
+    (add-hook (intern (concat (symbol-name mode) "-hook"))
+              #'turn-off-evil-snipe-mode)
+    (add-hook (intern (concat (symbol-name mode) "-hook"))
+              #'turn-off-evil-snipe-override-mode)))
 
 (provide 'chidu-evil)
 

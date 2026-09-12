@@ -90,7 +90,7 @@
             (goto-char (match-beginning 0))
             (chidu-activate-at-point)
             (should (equal (car visited) (cdr entry)))
-            ;; g o is independent of the activated inline object.
+            ;; g x is independent of the activated inline object.
             (chidu-browse-at-point)
             (should (equal (car visited) url)))
           (dolist (literal '("@inline" "unsafe" "+ ordinary"))
