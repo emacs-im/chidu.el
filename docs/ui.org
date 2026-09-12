@@ -22,7 +22,7 @@
 
 * Contacts
 
-=M-x chidu-contacts= 打开当前或选择 Endpoint 的 JMAP AddressBooks。Root 中 =A=、Evil =g a= 和 Root
+=M-x chidu-contacts= 打开当前或选择 Endpoint 的 JMAP AddressBooks。Root 中 =A=（包括 Evil）和 Root
 Transient的 Address Books入口执行同一命令。
 
 AddressBook directory按服务端 =sortOrder= 排序，Subscribed books默认展开；未订阅 books位于折叠的
@@ -178,7 +178,7 @@ GitHub 通知优先把 HTML 解析为 Appkit 原生正文，不使用 SHR 或整
 选择仅保存在当前阅读视图中，Conversation 的每封邮件独立选择；普通重绘和折叠不会重置选择。
 切换同时更新附件区，不下载资源或改变邮件状态。只有一种正文时不显示选择器。
 
-三个阅读界面的 =RET= 都激活当前位置的链接或控件。Evil 的 =g o= 打开当前邮件的 GitHub
+三个阅读界面的 =RET= 都激活当前位置的链接或控件。Evil 的 =g x= 打开当前邮件的 GitHub
 原帖，保留评论锚点，不受 point 所在链接影响，也不会查找相邻邮件或获取缺失正文。
 
 只有当前 Email 的 attachment manifest 能够通过 =cid:= 或 Content-Location 唯一证明的图片，才可以在正文中显示。
@@ -202,11 +202,6 @@ GitHub 通知优先把 HTML 解析为 Appkit 原生正文，不使用 SHR 或整
 
 * Transient 与 Evil
 
-所有 Chidu 界面都用 =?= 打开上下文 Transient menu。
-常用操作保留直接按键，菜单负责动作发现、当前可用性和不常用命令。
-
-Major-mode map 继续提供 Emacs-state contract，Evil 层保留 motion、operator、visual state 和 =TAB/C-i= jump。
-Summary 和 Search 使用 =m/u/U/t/M/~=、=d/x=、=a=、=RET= 和 =g r/g +=。
-Conversation 使用 =RET=、=<tab>=、=za/zc/zo= 和 =g r=。
-
-=chidu-evil-enable-integration= 可以关闭 Evil 集成，=chidu-evil-initial-state= 可以修改 Chidu buffer 的初始 state。
+=?= 打开上下文 Transient；Evil 绑定见 =chidu-evil.el=。
+=chidu-evil-enable-integration= 控制集成开关，
+=chidu-evil-initial-state= 控制初始 state。

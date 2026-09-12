@@ -152,7 +152,8 @@ Contact detail：
 | =c= | 写邮件 |
 | =?= | 打开 Transient |
 
-Evil bindings使用相同领域命令，并保留原生 navigation/operator语义。
+Evil normal/motion state 使用相同领域命令：=?= 菜单；Contact list 用 =g r= 刷新、
+=g s= 搜索、=g ?= detail、=c= 写邮件。Contact detail 通过菜单刷新；普通 navigation 保留。
 
 * 模块边界
 
